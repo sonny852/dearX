@@ -8,6 +8,7 @@ import ChatInterface from './components/ChatInterface';
 import PeopleManager from './components/PeopleManager';
 import PersonForm from './components/PersonForm';
 import Footer from './components/Footer';
+import PaperAirplane from './components/PaperAirplane';
 
 function AppContent() {
   const {
@@ -59,6 +60,7 @@ function AppContent() {
         }}
       >
         <LandingHero />
+        <PaperAirplane />
         {showForm && <MyInfoForm />}
       </div>
 

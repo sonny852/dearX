@@ -66,13 +66,15 @@ export function AppProvider({ children }) {
       const { data: { user } } = await auth.getUser();
       if (user) {
         const { data: profile } = await db.getOrCreateProfile(user.id);
+        const userName = profile?.name || user.user_metadata?.name || user.email?.split('@')[0] || 'User';
         setAuthUser({
           id: user.id,
           email: user.email,
-          name: profile?.name || user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+          name: userName,
           isPremium: profile?.is_premium || false,
           premiumExpiresAt: profile?.premium_expires_at,
         });
+        setMyInfo(prev => prev.name ? prev : { ...prev, name: userName });
 
         // 저장된 사람 목록 로드
         const { data: people } = await db.getPeople(user.id);
@@ -103,13 +105,15 @@ export function AppProvider({ children }) {
     const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         const { data: profile } = await db.getOrCreateProfile(session.user.id);
+        const userName = profile?.name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User';
         setAuthUser({
           id: session.user.id,
           email: session.user.email,
-          name: profile?.name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+          name: userName,
           isPremium: profile?.is_premium || false,
           premiumExpiresAt: profile?.premium_expires_at,
         });
+        setMyInfo(prev => prev.name ? prev : { ...prev, name: userName });
 
         // 저장된 사람 목록 로드
         const { data: people } = await db.getPeople(session.user.id);
