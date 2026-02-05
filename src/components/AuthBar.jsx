@@ -7,46 +7,18 @@ const AuthBar = memo(function AuthBar() {
 
   return (
     <div className="fixed top-8 right-8 z-[2000] flex items-center gap-2 bg-dark/80 backdrop-blur-xl px-2.5 py-2 rounded-full border border-coral/20">
-      {/* My Page Button */}
-      <button
-        onClick={() => alert(t.myPage)}
-        className="w-[42px] h-[42px] rounded-full border border-coral/25 flex items-center justify-center text-coral cursor-pointer transition-colors hover:bg-coral/20"
-        style={{
-          background: authUser ? 'rgba(255, 140, 105, 0.12)' : 'transparent',
-        }}
-      >
-        <User size={18} />
-      </button>
+      {authUser ? (
+        <>
+          {/* My Page Button */}
+          <button
+            onClick={() => alert(t.myPage)}
+            className="w-[42px] h-[42px] rounded-full border border-coral/25 flex items-center justify-center text-coral cursor-pointer transition-colors hover:bg-coral/20"
+            style={{ background: 'rgba(255, 140, 105, 0.12)' }}
+          >
+            <User size={18} />
+          </button>
 
-      {/* Kakao Login */}
-      <button
-        onClick={() => handleLogin('kakao')}
-        disabled={authLoading}
-        className="w-[42px] h-[42px] rounded-full border border-coral/25 bg-white/5 flex items-center justify-center cursor-pointer disabled:cursor-not-allowed transition-colors hover:bg-white/10"
-      >
-        <img
-          alt="Kakao"
-          src="https://upload.wikimedia.org/wikipedia/commons/e/e3/KakaoTalk_logo.svg"
-          className="w-[18px] h-[18px]"
-        />
-      </button>
-
-      {/* Google Login */}
-      <button
-        onClick={() => handleLogin('google')}
-        disabled={authLoading}
-        className="w-[42px] h-[42px] rounded-full border border-coral/25 bg-white/5 flex items-center justify-center cursor-pointer disabled:cursor-not-allowed transition-colors hover:bg-white/10"
-      >
-        <img
-          alt="Google"
-          src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-          className="w-[18px] h-[18px]"
-        />
-      </button>
-
-      {/* User Info & Logout */}
-      {authUser && (
-        <div className="ml-1 flex items-center gap-2">
+          {/* User Info & Logout */}
           <div className="px-3 h-[42px] flex items-center rounded-full bg-coral/10 border border-coral/20 text-cream/85 text-sm font-semibold">
             {authUser.name}
           </div>
@@ -56,7 +28,35 @@ const AuthBar = memo(function AuthBar() {
           >
             {t.logout}
           </button>
-        </div>
+        </>
+      ) : (
+        <>
+          {/* Kakao Login */}
+          <button
+            onClick={() => handleLogin('kakao')}
+            disabled={authLoading}
+            className="w-[42px] h-[42px] rounded-full border border-coral/25 bg-white/5 flex items-center justify-center cursor-pointer disabled:cursor-not-allowed transition-colors hover:bg-white/10"
+          >
+            <img
+              alt="Kakao"
+              src="https://upload.wikimedia.org/wikipedia/commons/e/e3/KakaoTalk_logo.svg"
+              className="w-[18px] h-[18px]"
+            />
+          </button>
+
+          {/* Google Login */}
+          <button
+            onClick={() => handleLogin('google')}
+            disabled={authLoading}
+            className="w-[42px] h-[42px] rounded-full border border-coral/25 bg-white/5 flex items-center justify-center cursor-pointer disabled:cursor-not-allowed transition-colors hover:bg-white/10"
+          >
+            <img
+              alt="Google"
+              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+              className="w-[18px] h-[18px]"
+            />
+          </button>
+        </>
       )}
     </div>
   );
