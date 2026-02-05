@@ -8,7 +8,7 @@ const MyInfoForm = memo(function MyInfoForm() {
   return (
     <div className="min-h-screen flex items-center justify-center p-8 pt-16 bg-dark z-[2]">
       <div className="max-w-[600px] w-full bg-dark-card backdrop-blur-2xl p-12 rounded-3xl border border-coral/20">
-        <h2 className="text-4xl font-display font-bold mb-4 text-center bg-gradient-to-br from-coral to-gold bg-clip-text"
+        <h2 className="text-[clamp(1.4rem,3.5vw,2rem)] font-display font-bold mb-4 text-center bg-gradient-to-br from-coral to-gold bg-clip-text"
           style={{ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
         >
           {t.formTitle}
