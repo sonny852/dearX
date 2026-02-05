@@ -5,8 +5,8 @@ import { supabase, auth, db } from '../lib/supabase';
 const AppContext = createContext(null);
 
 // Supabase Edge Function URL (배포 후 설정)
-const CHAT_FUNCTION_URL = import.meta.env.VITE_SUPABASE_URL
-  ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`
+const CHAT_FUNCTION_URL = process.env.REACT_APP_SUPABASE_URL
+  ? `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/chat`
   : null;
 
 export function AppProvider({ children }) {
