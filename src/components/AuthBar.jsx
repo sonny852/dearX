@@ -3,8 +3,11 @@ import { User, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 const AuthBar = memo(function AuthBar() {
-  const { authUser, authLoading, handleLogin, handleLogout, t } = useApp();
+  const { authUser, authLoading, handleLogin, handleLogout, showChat, t } = useApp();
   const [showLoginModal, setShowLoginModal] = useState(false);
+
+  // 채팅 화면에서는 AuthBar 숨김
+  if (showChat) return null;
 
   return (
     <>
