@@ -30,7 +30,7 @@ export function AppProvider({ children }) {
   const [additionalPeople, setAdditionalPeople] = useState([]);
 
   const [currentPersonForm, setCurrentPersonForm] = useState({
-    relationship: 'parent',
+    relationship: '',
     name: '',
     photo: null,
     targetAge: '',
@@ -226,7 +226,7 @@ export function AppProvider({ children }) {
       return;
     }
     setCurrentPersonForm({
-      relationship: 'parent',
+      relationship: '',
       name: '',
       photo: null,
       targetAge: '',
@@ -264,7 +264,7 @@ export function AppProvider({ children }) {
   }, [t.confirmDelete, additionalPeople, authUser]);
 
   const handleSavePerson = useCallback(async () => {
-    if (!currentPersonForm.name || !currentPersonForm.targetAge || !currentPersonForm.gender || !currentPersonForm.photo) {
+    if (!currentPersonForm.relationship || !currentPersonForm.name || !currentPersonForm.targetAge || !currentPersonForm.gender) {
       alert(t.requiredFieldsAlert);
       return;
     }

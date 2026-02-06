@@ -26,41 +26,41 @@ const ChatInterface = memo(function ChatInterface() {
   return (
     <div className="fixed inset-0 bg-dark z-[100] flex flex-col">
       {/* Header */}
-      <div className="p-8 border-b border-coral/20 bg-gradient-to-b from-dark/95 to-dark/80">
-        <div className="max-w-[900px] mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
+      <div className="p-4 sm:p-8 border-b border-coral/20 bg-gradient-to-b from-dark/95 to-dark/80">
+        <div className="max-w-[900px] mx-auto flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-0 sm:justify-between">
+          <div className="flex items-center gap-3 sm:gap-4">
             <div
-              className="w-[50px] h-[50px] rounded-full border-2 border-coral/30"
+              className="w-10 h-10 sm:w-[50px] sm:h-[50px] rounded-full border-2 border-coral/30 flex-shrink-0"
               style={{
                 background: (activePerson.currentPhoto || activePerson.photo)
                   ? `url(${activePerson.currentPhoto || activePerson.photo}) center/cover`
                   : 'linear-gradient(135deg, rgba(255, 140, 105, 0.3) 0%, rgba(255, 193, 122, 0.3) 100%)',
               }}
             />
-            <div>
-              <h2 className="m-0 text-xl font-display font-bold text-coral">
+            <div className="min-w-0">
+              <h2 className="m-0 text-lg sm:text-xl font-display font-bold text-coral truncate">
                 {activePerson.name}
               </h2>
-              <p className="m-0 text-sm text-cream/50">
+              <p className="m-0 text-xs sm:text-sm text-cream/50">
                 {activePerson.targetAge}세 · {activePerson.timeDirection === 'past' ? t.past : t.future}
               </p>
             </div>
           </div>
 
-          <div className="flex gap-2 sm:gap-4 flex-shrink-0">
+          <div className="flex gap-2 flex-shrink-0 self-end sm:self-auto">
             {activePerson.relationship === 'self' && (
               <button
                 onClick={() => setShowPeopleManager(true)}
-                className="px-3 sm:px-5 py-2 sm:py-3 bg-coral/15 border border-coral/30 rounded-xl sm:rounded-2xl text-coral cursor-pointer text-xs sm:text-sm flex items-center gap-1 sm:gap-2 hover:bg-coral/25 transition-colors whitespace-nowrap"
+                className="px-3 py-2 bg-coral/15 border border-coral/30 rounded-xl text-coral cursor-pointer text-xs flex items-center gap-1.5 hover:bg-coral/25 transition-colors whitespace-nowrap"
               >
-                <Users size={14} className="sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">{t.addMorePeople}</span>
-                <span className="sm:hidden">+</span>
+                <Users size={14} />
+                <span className="hidden xs:inline">{t.addMorePeople}</span>
+                <span className="xs:hidden">대화상대 추가</span>
               </button>
             )}
             <button
               onClick={handleBackFromChat}
-              className="px-3 sm:px-5 py-2 sm:py-3 bg-coral/10 border border-coral/30 rounded-xl sm:rounded-2xl text-coral cursor-pointer text-xs sm:text-sm hover:bg-coral/20 transition-colors"
+              className="px-3 py-2 bg-coral/10 border border-coral/30 rounded-xl text-coral cursor-pointer text-xs hover:bg-coral/20 transition-colors"
             >
               {t.back}
             </button>

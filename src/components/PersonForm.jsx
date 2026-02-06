@@ -16,7 +16,6 @@ const PersonForm = memo(function PersonForm() {
 
   if (!showPersonForm) return null;
 
-  const relationships = ['parent', 'grandparent', 'sibling', 'friend', 'other'];
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
@@ -41,24 +40,15 @@ const PersonForm = memo(function PersonForm() {
             <label className="block mb-2 text-coral text-sm font-semibold">
               {t.relationship} *
             </label>
-            <div className="flex flex-wrap gap-2">
-              {relationships.map((rel) => (
-                <button
-                  key={rel}
-                  type="button"
-                  onClick={() =>
-                    setCurrentPersonForm((prev) => ({ ...prev, relationship: rel }))
-                  }
-                  className={`px-4 py-2 rounded-full text-sm font-medium cursor-pointer transition-all ${
-                    currentPersonForm.relationship === rel
-                      ? 'bg-gradient-to-br from-coral to-gold text-white'
-                      : 'bg-coral/10 text-coral border border-coral/30 hover:bg-coral/20'
-                  }`}
-                >
-                  {t[rel]}
-                </button>
-              ))}
-            </div>
+            <input
+              type="text"
+              value={currentPersonForm.relationship}
+              onChange={(e) =>
+                setCurrentPersonForm((prev) => ({ ...prev, relationship: e.target.value }))
+              }
+              placeholder={t.relationshipPlaceholder}
+              className="w-full p-4 bg-dark/80 border border-coral/30 rounded-2xl text-cream text-base outline-none focus:border-coral/60 transition-colors"
+            />
           </div>
 
           {/* Name */}
@@ -147,45 +137,43 @@ const PersonForm = memo(function PersonForm() {
             </div>
           </div>
 
-          {/* Photo - Required for both past and future */}
-          <div className="mb-6">
-            <label className="block mb-2 text-coral text-sm font-semibold">
-              {t.photoForTime} *
-            </label>
-            <p className="text-cream/50 text-xs mb-3">
-              {t.uploadPhotoDesc}
-            </p>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleFileUpload(e, 'person')}
-              className="hidden"
-              id="personPhoto"
-            />
-            <label
-              htmlFor="personPhoto"
-              className="flex items-center justify-center gap-2 p-4 bg-coral/10 border-2 border-dashed border-coral/30 rounded-2xl text-coral cursor-pointer hover:bg-coral/20 transition-colors"
-              style={{
-                minHeight: currentPersonForm.photo ? '120px' : 'auto',
-                backgroundImage: currentPersonForm.photo
-                  ? `url(${currentPersonForm.photo})`
-                  : 'none',
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-              }}
-            >
-              {!currentPersonForm.photo && (
-                <>
-                  <Upload size={20} />
-                  <span>
-                    {currentPersonForm.timeDirection === 'past'
-                      ? t.uploadPastPhotoRequired
-                      : t.uploadFuturePhoto}
-                  </span>
-                </>
-              )}
-            </label>
-          </div>
+          {/* Photo - Optional, only for past */}
+          {currentPersonForm.timeDirection === 'past' && (
+            <div className="mb-6">
+              <label className="block mb-2 text-coral/70 text-sm font-semibold">
+                {t.photoForTime}
+              </label>
+              <p className="text-cream/50 text-xs mb-3">
+                {t.uploadPhotoDesc}
+              </p>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleFileUpload(e, 'person')}
+                className="hidden"
+                id="personPhoto"
+              />
+              <label
+                htmlFor="personPhoto"
+                className="flex items-center justify-center gap-2 p-4 bg-coral/10 border-2 border-dashed border-coral/30 rounded-2xl text-coral cursor-pointer hover:bg-coral/20 transition-colors"
+                style={{
+                  minHeight: currentPersonForm.photo ? '120px' : 'auto',
+                  backgroundImage: currentPersonForm.photo
+                    ? `url(${currentPersonForm.photo})`
+                    : 'none',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                }}
+              >
+                {!currentPersonForm.photo && (
+                  <>
+                    <Upload size={20} />
+                    <span>{t.uploadPastPhotoRequired}</span>
+                  </>
+                )}
+              </label>
+            </div>
+          )}
 
           {/* Character Details Section */}
           <div className="mb-6">
