@@ -23,8 +23,14 @@ export function AppProvider({ children }) {
     currentPhoto: null,
     pastPhoto: null,
     targetAge: '',
+    currentAge: '',
     gender: '',
     timeDirection: 'past',
+    personality: '',
+    hobbies: '',
+    memories: '',
+    family: '',
+    speechStyle: '',
   });
 
   const [additionalPeople, setAdditionalPeople] = useState([]);
@@ -175,7 +181,7 @@ export function AppProvider({ children }) {
     }
     setAuthUser(null);
     setAdditionalPeople([]);
-    setMyInfo({ name: '', currentPhoto: null, pastPhoto: null, targetAge: '', gender: '', timeDirection: 'past' });
+    setMyInfo({ name: '', currentPhoto: null, pastPhoto: null, targetAge: '', currentAge: '', gender: '', timeDirection: 'past', personality: '', hobbies: '', memories: '', family: '', speechStyle: '' });
   }, []);
 
   const handleFileUpload = useCallback((e, target) => {
@@ -196,11 +202,11 @@ export function AppProvider({ children }) {
   }, []);
 
   const handleMyFormSubmit = useCallback(() => {
-    if (!myInfo.name || !myInfo.targetAge || !myInfo.gender || !myInfo.currentPhoto) {
+    if (!myInfo.name || !myInfo.targetAge || !myInfo.currentAge || !myInfo.gender || !myInfo.currentPhoto) {
       alert(t.requiredFieldsAlert);
       return;
     }
-    const greeting = `${myInfo.name}님, 반갑습니다. ${myInfo.targetAge}세의 ${myInfo.timeDirection === 'past' ? '그때' : '그 시절'}로 돌아온 기분이에요.`;
+    const greeting = `안녕! 나 ${myInfo.targetAge}살 ${myInfo.name}이야~ ${myInfo.currentAge}살이 된 내가 찾아왔구나! 신기하다~`;
     setActivePerson({ ...myInfo, relationship: 'self' });
     setMessages([
       {
@@ -355,49 +361,60 @@ export function AppProvider({ children }) {
     setInput('');
     setIsTyping(true);
 
-    // Claude API 호출 시도
-    if (CHAT_FUNCTION_URL && supabase) {
+    // GPT API 호출 시도
+    console.log('Chat Debug:', { CHAT_FUNCTION_URL, hasSupabase: !!supabase, activePerson: activePerson?.name });
+    if (CHAT_FUNCTION_URL) {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        console.log('Attempting API call to:', CHAT_FUNCTION_URL);
 
+        const requestBody = {
+          person: activePerson,
+          messages: [...messages, userMessage].map(m => ({
+            role: m.role,
+            content: m.content,
+          })),
+          userName: myInfo.name || authUser?.name || 'User',
+        };
+        console.log('Request body:', requestBody);
+        console.log('Making fetch request now...');
+
+        const anonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
         const response = await fetch(CHAT_FUNCTION_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`,
+            'apikey': anonKey,
           },
-          body: JSON.stringify({
-            person: activePerson,
-            messages: [...messages, userMessage].map(m => ({
-              role: m.role,
-              content: m.content,
-            })),
-            userName: myInfo.name || authUser?.name || 'User',
-          }),
+          body: JSON.stringify(requestBody),
         });
 
+        console.log('Response status:', response.status);
+        const data = await response.json();
+        console.log('Response data:', data);
         if (response.ok) {
-          const data = await response.json();
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: 'assistant',
-              content: data.message,
-              timestamp: activePerson.timeDirection === 'past'
-                ? '2015.' + String(Math.floor(Math.random() * 12) + 1).padStart(2, '0') + '.' + String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')
-                : '2045.' + String(Math.floor(Math.random() * 12) + 1).padStart(2, '0') + '.' + String(Math.floor(Math.random() * 28) + 1).padStart(2, '0'),
-              mode: activePerson.timeDirection,
-            },
-          ]);
+          const newMessage = {
+            role: 'assistant',
+            content: data.message,
+            imageUrl: data.imageUrl || null,
+            timestamp: activePerson.timeDirection === 'past'
+              ? '2015.' + String(Math.floor(Math.random() * 12) + 1).padStart(2, '0') + '.' + String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')
+              : '2045.' + String(Math.floor(Math.random() * 12) + 1).padStart(2, '0') + '.' + String(Math.floor(Math.random() * 28) + 1).padStart(2, '0'),
+            mode: activePerson.timeDirection,
+          };
+          setMessages((prev) => [...prev, newMessage]);
           setIsTyping(false);
           return;
         }
       } catch (error) {
         console.error('Chat API error:', error);
+        console.log('Falling through to fallback due to error');
       }
+    } else {
+      console.log('Skipping API call - condition not met');
     }
 
     // Fallback: 기본 응답 (API 실패 또는 Demo mode)
+    console.log('Using fallback response');
     setTimeout(() => {
       const responses = [
         `${activePerson.favoriteWords || '괜찮아요. 당신은 충분히 잘하고 있어요.'}`,

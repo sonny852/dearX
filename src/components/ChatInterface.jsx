@@ -94,6 +94,17 @@ const ChatInterface = memo(function ChatInterface() {
                     : 'rounded-3xl rounded-bl-sm bg-dark-card border border-coral/30 shadow-lg shadow-black/30'
                 }`}
               >
+                {/* 이미지가 있으면 표시 */}
+                {msg.imageUrl && (
+                  <div className="mb-4">
+                    <img
+                      src={msg.imageUrl}
+                      alt="Generated"
+                      className="w-full max-w-[300px] rounded-2xl border border-coral/20"
+                      loading="lazy"
+                    />
+                  </div>
+                )}
                 <p
                   className={`m-0 text-lg leading-relaxed ${
                     msg.role === 'user' ? 'text-white' : 'text-cream'

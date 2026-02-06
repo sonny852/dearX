@@ -60,35 +60,49 @@ const MyInfoForm = memo(function MyInfoForm() {
           </div>
         </div>
 
-        {/* Age & Gender */}
+        {/* Current Age & Target Age */}
         <div className="grid grid-cols-2 gap-4 mb-6">
+          <div>
+            <label className="block mb-2 text-coral text-sm font-semibold">
+              현재 나이 *
+            </label>
+            <input
+              type="number"
+              value={myInfo.currentAge}
+              onChange={(e) => setMyInfo((prev) => ({ ...prev, currentAge: e.target.value }))}
+              placeholder="예: 35"
+              className="w-full p-4 bg-dark/80 border border-coral/30 rounded-2xl text-cream text-base outline-none focus:border-coral/60 transition-colors"
+            />
+          </div>
           <div>
             <label className="block mb-2 text-coral text-sm font-semibold">
               {t.targetAge} *
             </label>
             <input
-              type="text"
+              type="number"
               value={myInfo.targetAge}
               onChange={(e) => setMyInfo((prev) => ({ ...prev, targetAge: e.target.value }))}
               placeholder={t.agePlaceholder}
               className="w-full p-4 bg-dark/80 border border-coral/30 rounded-2xl text-cream text-base outline-none focus:border-coral/60 transition-colors"
             />
           </div>
-          <div>
-            <label className="block mb-2 text-coral text-sm font-semibold">
-              {t.gender} *
-            </label>
-            <select
-              value={myInfo.gender}
-              onChange={(e) => setMyInfo((prev) => ({ ...prev, gender: e.target.value }))}
-              className="w-full p-4 bg-dark/80 border border-coral/30 rounded-2xl text-cream text-base outline-none focus:border-coral/60 transition-colors"
-            >
-              <option value="">{t.genderSelect}</option>
-              <option value="male">{t.male}</option>
-              <option value="female">{t.female}</option>
-              <option value="other">{t.other_gender}</option>
-            </select>
-          </div>
+        </div>
+
+        {/* Gender */}
+        <div className="mb-6">
+          <label className="block mb-2 text-coral text-sm font-semibold">
+            {t.gender} *
+          </label>
+          <select
+            value={myInfo.gender}
+            onChange={(e) => setMyInfo((prev) => ({ ...prev, gender: e.target.value }))}
+            className="w-full p-4 bg-dark/80 border border-coral/30 rounded-2xl text-cream text-base outline-none focus:border-coral/60 transition-colors"
+          >
+            <option value="">{t.genderSelect}</option>
+            <option value="male">{t.male}</option>
+            <option value="female">{t.female}</option>
+            <option value="other">{t.other_gender}</option>
+          </select>
         </div>
 
         {/* Current Photo (Required) */}
@@ -163,6 +177,81 @@ const MyInfoForm = memo(function MyInfoForm() {
             </label>
           </div>
         )}
+
+        {/* Optional Fields Section */}
+        <div className="mb-6 pt-4 border-t border-coral/10">
+          <p className="text-sm text-cream/50 mb-4">선택 사항 (더 풍부한 대화를 위해)</p>
+
+          {/* Personality */}
+          <div className="mb-4">
+            <label className="block mb-2 text-coral/70 text-sm">
+              그때의 성격
+            </label>
+            <input
+              type="text"
+              value={myInfo.personality}
+              onChange={(e) => setMyInfo((prev) => ({ ...prev, personality: e.target.value }))}
+              placeholder="예: 수줍음 많았음, 호기심 대장, 장난꾸러기"
+              className="w-full p-3 bg-dark/60 border border-coral/20 rounded-xl text-cream text-sm outline-none focus:border-coral/40 transition-colors"
+            />
+          </div>
+
+          {/* Hobbies */}
+          <div className="mb-4">
+            <label className="block mb-2 text-coral/70 text-sm">
+              그때 좋아했던 것
+            </label>
+            <input
+              type="text"
+              value={myInfo.hobbies}
+              onChange={(e) => setMyInfo((prev) => ({ ...prev, hobbies: e.target.value }))}
+              placeholder="예: 공룡, 레고, 만화, 인형놀이"
+              className="w-full p-3 bg-dark/60 border border-coral/20 rounded-xl text-cream text-sm outline-none focus:border-coral/40 transition-colors"
+            />
+          </div>
+
+          {/* Memories */}
+          <div className="mb-4">
+            <label className="block mb-2 text-coral/70 text-sm">
+              기억나는 추억
+            </label>
+            <input
+              type="text"
+              value={myInfo.memories}
+              onChange={(e) => setMyInfo((prev) => ({ ...prev, memories: e.target.value }))}
+              placeholder="예: 할머니랑 시장 가던 것, 아빠랑 낚시"
+              className="w-full p-3 bg-dark/60 border border-coral/20 rounded-xl text-cream text-sm outline-none focus:border-coral/40 transition-colors"
+            />
+          </div>
+
+          {/* Family */}
+          <div className="mb-4">
+            <label className="block mb-2 text-coral/70 text-sm">
+              가족 구성
+            </label>
+            <input
+              type="text"
+              value={myInfo.family}
+              onChange={(e) => setMyInfo((prev) => ({ ...prev, family: e.target.value }))}
+              placeholder="예: 엄마, 아빠, 누나"
+              className="w-full p-3 bg-dark/60 border border-coral/20 rounded-xl text-cream text-sm outline-none focus:border-coral/40 transition-colors"
+            />
+          </div>
+
+          {/* Speech Style */}
+          <div className="mb-4">
+            <label className="block mb-2 text-coral/70 text-sm">
+              말버릇 / 자주 하던 말
+            </label>
+            <input
+              type="text"
+              value={myInfo.speechStyle}
+              onChange={(e) => setMyInfo((prev) => ({ ...prev, speechStyle: e.target.value }))}
+              placeholder="예: 진짜야?, 왜왜왜?, 싫어~"
+              className="w-full p-3 bg-dark/60 border border-coral/20 rounded-xl text-cream text-sm outline-none focus:border-coral/40 transition-colors"
+            />
+          </div>
+        </div>
 
         {/* Submit Button */}
         <button
