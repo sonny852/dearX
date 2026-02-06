@@ -1,10 +1,10 @@
-// Supabase Edge Function - Claude AI 대화
+// Supabase Edge Function - OpenAI GPT 대화
 // Deploy: supabase functions deploy chat
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
-const CLAUDE_API_KEY = Deno.env.get('CLAUDE_API_KEY');
-const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -35,16 +35,8 @@ function buildSystemPrompt(person: Person, userName: string): string {
     ? `과거의 ${person.targetAge}세 시절`
     : `미래의 ${person.targetAge}세 모습`;
 
-  const relationshipMap: Record<string, string> = {
-    parent: '부모님',
-    grandparent: '조부모님',
-    sibling: '형제자매',
-    friend: '친구',
-    other: '소중한 사람',
-    self: '자기 자신',
-  };
-
-  const relationship = relationshipMap[person.relationship] || person.relationship;
+  // 직접 입력된 관계를 그대로 사용
+  const relationship = person.relationship;
   const genderText = person.gender === 'male' ? '남성' : person.gender === 'female' ? '여성' : '';
 
   let prompt = `당신은 ${userName}의 ${relationship}인 "${person.name}"입니다.
@@ -101,8 +93,8 @@ serve(async (req) => {
   }
 
   try {
-    if (!CLAUDE_API_KEY) {
-      throw new Error('CLAUDE_API_KEY not configured');
+    if (!OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY not configured');
     }
 
     const { person, messages, userName } = await req.json();
@@ -113,33 +105,34 @@ serve(async (req) => {
 
     const systemPrompt = buildSystemPrompt(person, userName);
 
-    // Claude API 요청
-    const response = await fetch(CLAUDE_API_URL, {
+    // OpenAI API 요청
+    const response = await fetch(OPENAI_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': CLAUDE_API_KEY,
-        'anthropic-version': '2023-06-01',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'gpt-4o-mini',
         max_tokens: 500,
-        system: systemPrompt,
-        messages: messages.map((m: Message) => ({
-          role: m.role,
-          content: m.content,
-        })),
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...messages.map((m: Message) => ({
+            role: m.role,
+            content: m.content,
+          })),
+        ],
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Claude API error:', errorText);
-      throw new Error(`Claude API error: ${response.status}`);
+      console.error('OpenAI API error:', errorText);
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const assistantMessage = data.content[0]?.text || '...';
+    const assistantMessage = data.choices[0]?.message?.content || '...';
 
     return new Response(
       JSON.stringify({
