@@ -382,7 +382,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'claude-3-haiku-20240307',
-        max_tokens: 100,
+        max_tokens: 400,
         system: finalSystemPrompt,
         messages: messages.map((m: Message) => ({
           role: m.role,
