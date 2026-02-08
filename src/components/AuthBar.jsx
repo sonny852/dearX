@@ -3,7 +3,7 @@ import { User, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 const AuthBar = memo(function AuthBar() {
-  const { authUser, authLoading, handleLogin, handleLogout, showChat, t } = useApp();
+  const { authUser, authLoading, handleLogin, handleLogout, showChat, setShowMyPage, t } = useApp();
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   // 채팅 화면에서는 AuthBar 숨김
@@ -16,7 +16,7 @@ const AuthBar = memo(function AuthBar() {
         {authUser ? (
           <div className="flex items-center gap-1.5 bg-dark/80 backdrop-blur-xl px-1.5 py-1 rounded-full border border-coral/20">
             <button
-              onClick={() => alert(t.myPage)}
+              onClick={() => setShowMyPage(true)}
               className="w-8 h-8 rounded-full border border-coral/25 flex items-center justify-center text-coral cursor-pointer transition-colors hover:bg-coral/20"
               style={{ background: 'rgba(255, 140, 105, 0.12)' }}
             >

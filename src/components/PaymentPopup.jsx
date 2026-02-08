@@ -89,14 +89,14 @@ const PaymentPopup = memo(function PaymentPopup() {
 
               <div className="grid grid-cols-3 gap-2">
                 {/* 하루 */}
-                <div className="relative p-3 bg-dark-card border border-coral/20 rounded-xl hover:border-coral/40 transition-colors cursor-pointer group">
-                  <div className="text-center">
+                <div className="relative p-3 pt-6 bg-dark-card border border-coral/20 rounded-xl hover:border-coral/40 transition-colors cursor-pointer group flex flex-col">
+                  <div className="text-center flex-1 flex flex-col">
                     <p className="text-cream/70 text-xs mb-1">{t.priceDay}</p>
                     <p className="text-xl font-bold text-coral mb-1">{t.priceDayAmount}</p>
-                    <p className="text-cream/50 text-[10px] mb-2">{t.priceDayDesc}</p>
+                    <p className="text-cream/50 text-[10px] mb-3 flex-1">{t.priceDayDesc}</p>
                     <button
                       onClick={() => handleSelectPlan('day')}
-                      className="w-full py-1.5 bg-coral/20 border border-coral/30 rounded-lg text-coral text-xs font-semibold hover:bg-coral/30 transition-colors"
+                      className="w-full py-1.5 bg-coral/20 border border-coral/30 rounded-lg text-coral text-xs font-semibold hover:bg-coral/30 transition-colors mt-auto"
                     >
                       {t.selectPlan}
                     </button>
@@ -104,20 +104,20 @@ const PaymentPopup = memo(function PaymentPopup() {
                 </div>
 
                 {/* 1주 - 인기 */}
-                <div className="relative p-3 bg-gradient-to-b from-coral/10 to-dark-card border-2 border-coral/50 rounded-xl cursor-pointer group">
-                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-gradient-to-r from-coral to-gold rounded-full">
+                <div className="relative p-3 pt-6 bg-gradient-to-b from-coral/10 to-dark-card border-2 border-coral/50 rounded-xl cursor-pointer group flex flex-col">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-gradient-to-r from-coral to-gold rounded-full whitespace-nowrap">
                     <span className="text-white text-[10px] font-bold flex items-center gap-0.5">
                       <Sparkles size={10} />
                       {t.mostPopular}
                     </span>
                   </div>
-                  <div className="text-center pt-1">
+                  <div className="text-center flex-1 flex flex-col">
                     <p className="text-cream/70 text-xs mb-1">{t.priceWeek}</p>
                     <p className="text-xl font-bold text-coral mb-1">{t.priceWeekAmount}</p>
-                    <p className="text-cream/50 text-[10px] mb-2">{t.priceWeekDesc}</p>
+                    <p className="text-cream/50 text-[10px] mb-3 flex-1">{t.priceWeekDesc}</p>
                     <button
                       onClick={() => handleSelectPlan('week')}
-                      className="w-full py-1.5 bg-gradient-to-r from-coral to-gold border-none rounded-lg text-white text-xs font-semibold hover:opacity-90 transition-opacity"
+                      className="w-full py-1.5 bg-gradient-to-r from-coral to-gold border-none rounded-lg text-white text-xs font-semibold hover:opacity-90 transition-opacity mt-auto"
                     >
                       {t.selectPlan}
                     </button>
@@ -125,17 +125,17 @@ const PaymentPopup = memo(function PaymentPopup() {
                 </div>
 
                 {/* 1달 - 가성비 */}
-                <div className="relative p-3 bg-dark-card border border-coral/20 rounded-xl hover:border-coral/40 transition-colors cursor-pointer group">
-                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-coral/30 border border-coral/50 rounded-full">
+                <div className="relative p-3 pt-6 bg-dark-card border border-coral/20 rounded-xl hover:border-coral/40 transition-colors cursor-pointer group flex flex-col">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-coral/30 border border-coral/50 rounded-full whitespace-nowrap">
                     <span className="text-coral text-[10px] font-bold">{t.bestValue}</span>
                   </div>
-                  <div className="text-center pt-1">
+                  <div className="text-center flex-1 flex flex-col">
                     <p className="text-cream/70 text-xs mb-1">{t.priceMonth}</p>
                     <p className="text-xl font-bold text-coral mb-1">{t.priceMonthAmount}</p>
-                    <p className="text-cream/50 text-[10px] mb-2">{t.priceMonthDesc}</p>
+                    <p className="text-cream/50 text-[10px] mb-3 flex-1">{t.priceMonthDesc}</p>
                     <button
                       onClick={() => handleSelectPlan('month')}
-                      className="w-full py-1.5 bg-coral/20 border border-coral/30 rounded-lg text-coral text-xs font-semibold hover:bg-coral/30 transition-colors"
+                      className="w-full py-1.5 bg-coral/20 border border-coral/30 rounded-lg text-coral text-xs font-semibold hover:bg-coral/30 transition-colors mt-auto"
                     >
                       {t.selectPlan}
                     </button>

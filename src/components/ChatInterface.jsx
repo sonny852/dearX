@@ -1,5 +1,5 @@
 import React, { memo, useRef, useEffect } from 'react';
-import { Send, Clock, X } from 'lucide-react';
+import { Send, Clock, X, Home } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 const ChatInterface = memo(function ChatInterface() {
@@ -11,6 +11,7 @@ const ChatInterface = memo(function ChatInterface() {
     isTyping,
     sendMessage,
     handleBackFromChat,
+    setShowForm,
     messageCount,
     FREE_MESSAGE_LIMIT,
     authUser,
@@ -19,6 +20,11 @@ const ChatInterface = memo(function ChatInterface() {
     handleLogin,
     t,
   } = useApp();
+
+  const handleGoHome = () => {
+    handleBackFromChat();
+    setShowForm(false);
+  };
 
   const remainingFreeMessages = FREE_MESSAGE_LIMIT - messageCount;
 
@@ -36,6 +42,15 @@ const ChatInterface = memo(function ChatInterface() {
       <div className="p-4 border-b border-coral/20 bg-gradient-to-b from-dark/95 to-dark/80">
         <div className="max-w-[900px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
+            {/* 홈 버튼 - 비로그인 사용자만 */}
+            {!authUser && (
+              <button
+                onClick={handleGoHome}
+                className="w-10 h-10 rounded-full bg-coral/10 border border-coral/30 flex items-center justify-center text-coral hover:bg-coral/20 transition-colors"
+              >
+                <Home size={18} />
+              </button>
+            )}
             <div
               className="w-10 h-10 rounded-full border-2 border-coral/30 flex-shrink-0"
               style={{
@@ -55,7 +70,7 @@ const ChatInterface = memo(function ChatInterface() {
           </div>
 
           <button
-            onClick={handleBackFromChat}
+            onClick={authUser ? handleBackFromChat : handleGoHome}
             className="px-3 py-2 bg-coral/10 border border-coral/30 rounded-xl text-coral cursor-pointer text-xs hover:bg-coral/20 transition-colors"
           >
             {t.back}
@@ -71,6 +86,17 @@ const ChatInterface = memo(function ChatInterface() {
         }}
       >
         <div className="max-w-[900px] mx-auto">
+          {/* 비로그인 사용자 알림 */}
+          {!authUser && (
+            <div className="mb-6 p-4 bg-coral/10 border border-coral/30 rounded-2xl text-center">
+              <p className="text-cream/80 text-sm mb-2">
+                {t.guestNotice || '회원 정보가 저장되지 않아 대화 내용이 정확하지 않을 수 있어요'}
+              </p>
+              <p className="text-cream/50 text-xs">
+                {t.guestNoticeLogin || '로그인하면 더 자연스러운 대화가 가능합니다'}
+              </p>
+            </div>
+          )}
           {messages.map((msg, i) => (
             <div
               key={i}
