@@ -1,7 +1,6 @@
 import React, { memo, useRef, useEffect } from 'react';
-import { Send, Clock, Users } from 'lucide-react';
+import { Send, Clock, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import PaymentPopup from './PaymentPopup';
 
 const ChatInterface = memo(function ChatInterface() {
   const {
@@ -12,10 +11,12 @@ const ChatInterface = memo(function ChatInterface() {
     isTyping,
     sendMessage,
     handleBackFromChat,
-    setShowPeopleManager,
     messageCount,
     FREE_MESSAGE_LIMIT,
     authUser,
+    showLoginRequired,
+    setShowLoginRequired,
+    handleLogin,
     t,
   } = useApp();
 
@@ -48,7 +49,7 @@ const ChatInterface = memo(function ChatInterface() {
                 {activePerson.name}
               </h2>
               <p className="m-0 text-xs text-cream/50">
-                {activePerson.targetAge}세 · {activePerson.timeDirection === 'past' ? t.past : t.future}
+                {activePerson.targetAge}{t.ageUnit} · {activePerson.timeDirection === 'past' ? t.past : t.future}
               </p>
             </div>
           </div>
@@ -171,8 +172,61 @@ const ChatInterface = memo(function ChatInterface() {
         </div>
       </div>
 
-      {/* Payment Popup */}
-      <PaymentPopup />
+      {/* Login Required Popup */}
+      {showLoginRequired && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="relative w-full max-w-[400px] bg-dark-card backdrop-blur-2xl rounded-3xl border border-coral/20 p-8">
+            <button
+              onClick={() => setShowLoginRequired(false)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-coral/10 flex items-center justify-center text-coral/60 hover:text-coral transition-colors"
+            >
+              <X size={18} />
+            </button>
+
+            <h2
+              className="text-3xl font-display font-black text-center mb-2 bg-gradient-to-br from-white via-coral to-gold bg-clip-text"
+              style={{ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
+            >
+              DearX
+            </h2>
+
+            <p className="text-center text-cream/60 text-sm mb-6">
+              {t.freeMessagesUsed || '무료 대화 횟수를 모두 사용했어요'}
+            </p>
+
+            <p className="text-center text-cream/50 text-xs mb-6">
+              {t.loginRequiredToContinue || '계속 대화하려면 로그인이 필요해요'}
+            </p>
+
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => { handleLogin('kakao'); setShowLoginRequired(false); }}
+                className="w-full h-12 rounded-2xl bg-[#FEE500] text-[#191919] text-sm font-semibold flex items-center justify-center gap-2 hover:brightness-95 transition-all"
+              >
+                <img
+                  alt=""
+                  src="https://upload.wikimedia.org/wikipedia/commons/e/e3/KakaoTalk_logo.svg"
+                  className="w-5 h-5"
+                />
+                {t.continueWithKakao}
+              </button>
+
+              <button
+                onClick={() => { handleLogin('google'); setShowLoginRequired(false); }}
+                className="w-full h-12 rounded-2xl bg-white text-[#333] text-sm font-semibold flex items-center justify-center gap-2 hover:brightness-95 transition-all"
+              >
+                <img
+                  alt=""
+                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                  className="w-5 h-5"
+                />
+                {t.continueWithGoogle}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 });

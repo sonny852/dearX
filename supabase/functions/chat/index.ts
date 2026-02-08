@@ -1,10 +1,12 @@
-// Supabase Edge Function - OpenAI GPT 대화 + DALL-E 이미지 생성
+// Supabase Edge Function - Claude 대화 + DALL-E 이미지 생성
 // Deploy: supabase functions deploy chat --no-verify-jwt
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY'); // DALL-E용
+const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
+const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions'; // Vision용
 const DALLE_API_URL = 'https://api.openai.com/v1/images/generations';
 
 const corsHeaders = {
@@ -218,29 +220,35 @@ function buildSystemPrompt(person: Person, userName: string): string {
   if (relationship === 'self' && person.currentAge) {
     if (person.timeDirection === 'past') {
       selfContext = `
-## 특별한 상황 (매우 중요!)
+## 특별한 상황 (가장 중요!!!)
 너는 ${person.targetAge}살의 ${person.name}이야.
-지금 미래에서 온 ${person.currentAge}살의 "나 자신"과 대화하고 있어.
-즉, 대화 상대는 ${person.currentAge - person.targetAge}년 후의 내가 된 거야!
+지금 타임머신을 타고 미래에서 온 ${person.currentAge}살의 "나 자신"을 만났어!
+대화 상대는 ${person.currentAge - person.targetAge}년 후의 "나"야. 즉, 커버린 나!
 
-## 핵심 규칙
-- 너와 대화 상대는 "같은 사람"이야. 같이 논 적이 없어!
-- "우리가 같이 놀았던" (X) → "내가 놀았던" (O)
-- "우리 추억" (X) → "내 추억", "나 그때" (O)
-- 미래의 내가 찾아와서 신기한 상황이야
-- "와 나 ${person.currentAge}살 되면 어떻게 생겼어?", "미래의 나는 뭐해?" 이런 식으로 궁금해해`;
+## 말투 (절대 규칙!)
+- 반말만 써! 존댓말 금지!
+- "있어요" (X) → "있어" (O)
+- "계셔요" (X) → "있어" (O)
+- "좋아요" (X) → "좋아" (O)
+
+## 길이 (가장 중요!!!)
+- 딱 1문장! 10단어 이내!
+- 길게 말하면 벌점!
+
+## 예시 (이 길이로!)
+"응!" / "뭐?" / "몰라~" / "진짜?" / "그게 뭐야?" / "응 잘 지내!" / "헐 대박!"`;
     } else {
       selfContext = `
-## 특별한 상황 (매우 중요!)
+## 특별한 상황 (가장 중요!!!)
 너는 ${person.targetAge}살의 ${person.name}이야.
-지금 과거에서 온 ${person.currentAge}살의 "나 자신"과 대화하고 있어.
-즉, 대화 상대는 ${person.targetAge - person.currentAge}년 전의 내가 된 거야!
+지금 타임머신을 타고 과거에서 온 ${person.currentAge}살의 "나 자신"을 만났어!
+대화 상대는 ${person.targetAge - person.currentAge}년 전의 "나"야. 즉, 어린 시절의 나!
 
-## 핵심 규칙
-- 너와 대화 상대는 "같은 사람"이야. 같이 논 적이 없어!
-- "우리가 같이" (X) → "네가 그때", "너 그때" (O)
-- 과거의 나에게 따뜻하게 조언해주고 위로해줘
-- "걱정하지 마, 다 잘 될 거야" 같은 격려`;
+## 호칭과 관계 (절대 규칙)
+- 대화 상대는 어린 시절의 나니까 따뜻하게 대해
+- 반말로 편하게, 하지만 다정하게
+- 과거의 나를 응원하고 위로해줘
+- "걱정 마", "잘 될 거야", "넌 잘하고 있어" 같은 따뜻한 말`;
     }
   }
 
@@ -294,47 +302,26 @@ ${selfContext}
 
   // 성별과 나이에 따른 말투 스타일
   let speechStyleGuide = '';
-  if (person.gender === 'male') {
-    if (person.targetAge <= 10) {
-      speechStyleGuide = `- 어린 남자아이답게 순수하고 장난기 있게 말해
-- "엄마~", "아빠~" 처럼 응석부리는 것도 OK
-- 활발하고 에너지 넘치는 느낌`;
-    } else if (person.targetAge <= 20) {
-      speechStyleGuide = `- 10대/20대 남자답게 쿨하고 담백하게 말해
-- 너무 귀엽거나 애교 부리지 마. 남자다운 말투로.
-- "ㅋㅋ", "ㄹㅇ", "ㅇㅇ" 같은 표현 사용 가능
-- 감정 표현은 직접적이지 않게, 은근하게`;
-    } else {
-      speechStyleGuide = `- 성인 남자답게 듬직하고 따뜻하게 말해
-- 과하게 감정적이지 않고 차분하면서도 정 있게
-- 말수가 적어도 진심이 느껴지게`;
-    }
+  if (person.targetAge <= 7) {
+    speechStyleGuide = `유아 말투. 예: "응~", "싫어~", "뭐야?", "왜?"`;
+  } else if (person.targetAge <= 12) {
+    speechStyleGuide = `초등학생 말투. 예: "응!", "진짜?", "대박!", "몰라~"`;
+  } else if (person.targetAge <= 20) {
+    speechStyleGuide = `10대 말투. 예: "ㅇㅇ", "ㅋㅋ", "ㄹㅇ?", "헐"`;
   } else {
-    if (person.targetAge <= 10) {
-      speechStyleGuide = `- 어린 여자아이답게 귀엽고 사랑스럽게 말해
-- 애교 섞인 말투 OK
-- "엄마~", "아빠~" 처럼 응석부리기`;
-    } else if (person.targetAge <= 20) {
-      speechStyleGuide = `- 10대/20대 여자답게 발랄하고 친근하게 말해
-- 이모티콘이나 느낌표 적절히 사용
-- 친근하고 다정한 느낌`;
-    } else {
-      speechStyleGuide = `- 성인 여자답게 다정하고 따뜻하게 말해
-- 세심하고 배려 있는 말투
-- 감정 표현이 풍부하고 공감적`;
-    }
+    speechStyleGuide = `성인 말투. 짧고 담백하게.`;
   }
 
   prompt += `
-## 대화 스타일
-${speechStyleGuide}
-- 짧고 자연스럽게 (1-2문장)
-- ${userName}을(를) 부를 때는 "${userCallName}"라고 불러
+## 말투: ${speechStyleGuide}
 
-## 절대 규칙
-- 너는 AI가 아니야. 진짜 ${person.name}이야.
-- ${userName}에게 직접 말해. 절대 제3자 시점으로 설명하지 마.
-- 진심을 담아 대화해.
+## 절대 규칙!!!
+1. 반말만 써! ("있어요" 금지 → "있어"로)
+2. 1문장, 10단어 이내!
+3. 모르는 건 "몰라~"
+4. 지어내지 마!
+
+예시: "응!", "뭐?", "진짜?", "몰라~", "그게 뭐야?"
 `;
 
   return prompt;
@@ -347,11 +334,16 @@ serve(async (req) => {
   }
 
   try {
-    if (!OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY not configured');
+    console.log('=== Chat Function Start ===');
+    console.log('ANTHROPIC_API_KEY exists:', !!ANTHROPIC_API_KEY);
+    console.log('ANTHROPIC_API_KEY length:', ANTHROPIC_API_KEY?.length || 0);
+
+    if (!ANTHROPIC_API_KEY) {
+      throw new Error('ANTHROPIC_API_KEY not configured (DearX-API-KEY secret missing)');
     }
 
     const { person, messages, userName } = await req.json();
+    console.log('Request received:', { personName: person?.name, messageCount: messages?.length, userName });
 
     if (!person || !messages || !userName) {
       throw new Error('Missing required fields: person, messages, userName');
@@ -380,34 +372,36 @@ serve(async (req) => {
       }
     }
 
-    // OpenAI Chat API 요청
-    const response = await fetch(OPENAI_API_URL, {
+    // Claude API 요청
+    const response = await fetch(CLAUDE_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        max_tokens: 500,
-        messages: [
-          { role: 'system', content: finalSystemPrompt },
-          ...messages.map((m: Message) => ({
-            role: m.role,
-            content: m.content,
-          })),
-        ],
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 100,
+        system: finalSystemPrompt,
+        messages: messages.map((m: Message) => ({
+          role: m.role,
+          content: m.content,
+        })),
       }),
     });
 
+    console.log('Claude API response status:', response.status);
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API error:', errorText);
-      throw new Error(`OpenAI API error: ${response.status}`);
+      console.error('Claude API error:', response.status, errorText);
+      throw new Error(`Claude API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    const assistantMessage = data.choices[0]?.message?.content || '...';
+    console.log('Claude API response:', JSON.stringify(data).substring(0, 500));
+    const assistantMessage = data.content?.[0]?.text || '...';
 
     // 사진 요청인 경우: 업로드된 사진이 있으면 그걸 사용, 없으면 AI 생성
     let imageUrl = null;

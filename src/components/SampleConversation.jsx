@@ -11,6 +11,7 @@ const SampleConversation = memo(function SampleConversation({ onComplete }) {
     { role: 'assistant', text: '나도 보고 싶었어. 밥은 먹었니?' },
     { role: 'user', text: '웅 엄마가 끓여준 된장찌개 먹고 싶다' },
     { role: 'assistant', text: '다음에 또 해줄게 우리 아들 사랑해 ❤️' },
+    { role: 'user', text: '나도 사랑해 엄마 보고싶어 ❤️' },
   ];
 
   // 메시지 순차적으로 표시
@@ -29,11 +30,11 @@ const SampleConversation = memo(function SampleConversation({ onComplete }) {
   }, [visibleMessages, messages.length, onComplete]);
 
   return (
-    <div className="w-full h-full flex flex-col px-4 py-6 pb-20">
+    <div className="w-full h-full flex flex-col px-4 py-6 pb-28">
       <p className="text-center text-cream/40 text-sm mb-3 flex-shrink-0">{t.sampleConversationTitle}</p>
 
       {/* 채팅창 컨테이너 */}
-      <div className="flex-1 bg-dark-card/80 backdrop-blur-xl rounded-3xl border border-coral/20 overflow-hidden shadow-2xl flex flex-col max-h-[75vh]">
+      <div className="flex-1 bg-dark-card/80 backdrop-blur-xl rounded-3xl border border-coral/20 overflow-hidden shadow-2xl flex flex-col max-h-[65vh]">
         {/* 헤더 - 프로필 */}
         <div className="px-4 py-3 border-b border-white/10 flex items-center gap-3 flex-shrink-0">
           <div className="w-11 h-11 rounded-full bg-gradient-to-br from-coral/40 to-gold/40 flex items-center justify-center text-xl">
