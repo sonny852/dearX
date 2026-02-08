@@ -18,8 +18,8 @@ export function AppProvider({ children }) {
   const [showChat, setShowChat] = useState(false);
   const [editingPersonIndex, setEditingPersonIndex] = useState(null);
 
-  // Message count for free tier (1 free message per day - 테스트용)
-  const FREE_MESSAGE_LIMIT = 1;
+  // Message count for free tier
+  const FREE_MESSAGE_LIMIT = 5;
   const [showPaymentPopup, setShowPaymentPopup] = useState(false);
   const [showLoginRequired, setShowLoginRequired] = useState(false);
   const [showMyPage, setShowMyPage] = useState(false);
