@@ -1,18 +1,18 @@
-import React, { useState, useEffect, memo } from 'react';
+import React, { useState, useEffect, memo, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 
 const SampleConversation = memo(function SampleConversation({ onComplete }) {
   const { t } = useApp();
   const [visibleMessages, setVisibleMessages] = useState(0);
 
-  const messages = [
-    { role: 'assistant', text: '우리 아들 오랜만이야 잘 지냈어?' },
-    { role: 'user', text: '엄마 보고 싶었어' },
-    { role: 'assistant', text: '나도 보고 싶었어. 밥은 먹었니?' },
-    { role: 'user', text: '웅 엄마가 끓여준 된장찌개 먹고 싶다' },
-    { role: 'assistant', text: '다음에 또 해줄게 우리 아들 사랑해 ❤️' },
-    { role: 'user', text: '나도 사랑해 엄마 보고싶어 ❤️' },
-  ];
+  const messages = useMemo(() => [
+    { role: 'assistant', text: t.sampleMsg1 },
+    { role: 'user', text: t.sampleMsg2 },
+    { role: 'assistant', text: t.sampleMsg3 },
+    { role: 'user', text: t.sampleMsg4 },
+    { role: 'assistant', text: t.sampleMsg5 },
+    { role: 'user', text: t.sampleMsg6 },
+  ], [t]);
 
   // 메시지 순차적으로 표시
   useEffect(() => {
@@ -41,8 +41,8 @@ const SampleConversation = memo(function SampleConversation({ onComplete }) {
             👩
           </div>
           <div>
-            <p className="text-cream font-medium">엄마</p>
-            <p className="text-cream/40 text-xs">1985년의 엄마</p>
+            <p className="text-cream font-medium">{t.samplePerson}</p>
+            <p className="text-cream/40 text-xs">{t.samplePersonDesc}</p>
           </div>
         </div>
 
@@ -85,7 +85,7 @@ const SampleConversation = memo(function SampleConversation({ onComplete }) {
         <div className="px-4 py-3 border-t border-white/10">
           <div className="flex items-center gap-2">
             <div className="flex-1 bg-white/5 rounded-full px-4 py-2.5 text-cream/30 text-sm">
-              메시지를 입력하세요...
+              {t.sendMessage}
             </div>
             <div className="w-9 h-9 rounded-full bg-coral/20 flex items-center justify-center">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-coral/50">

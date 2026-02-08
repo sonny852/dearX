@@ -718,13 +718,15 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
         {isComplete && canSubmit && (
           <div className={`w-full max-w-md transition-all duration-200 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}>
             <p className="text-cream/60 text-center mb-6">
-              {currentPersonForm.targetYear}년의 {currentPersonForm.relationship}을(를) 만날 준비가 됐어요
+              {(t.readyToMeet || '{{year}}년의 {{relationship}}을(를) 만날 준비가 됐어요')
+                .replace('{{year}}', currentPersonForm.targetYear)
+                .replace('{{relationship}}', currentPersonForm.relationship)}
             </p>
             <button
               onClick={handleFinalSubmit}
               className="w-full py-4 bg-coral text-white rounded-2xl font-medium text-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
             >
-              대화 시작하기
+              {t.startChat}
               <ChevronRight size={20} />
             </button>
           </div>
