@@ -1,5 +1,5 @@
 import React, { memo, useCallback, useState, useEffect, useRef } from 'react';
-import { Send, Upload, X, ChevronRight } from 'lucide-react';
+import { Send, Upload, X, ChevronRight, Camera, Trash2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToStart }) {
@@ -12,6 +12,7 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
     editingPersonIndex,
     handleFileUpload,
     handleSavePerson,
+    handleDeletePerson,
     handleStartChatWithPerson,
     t,
   } = useApp();
@@ -19,9 +20,60 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
   const [currentStep, setCurrentStep] = useState(0);
   const [inputValue, setInputValue] = useState('');
   const [isAnimating, setIsAnimating] = useState(false);
+  const [validationError, setValidationError] = useState('');
   const inputRef = useRef(null);
 
   const currentYear = new Date().getFullYear();
+
+  // 검증 규칙
+  const VALIDATION = {
+    year: { min: 1900, max: currentYear + 50 },
+    age: { min: 1, max: 120 },
+  };
+
+  // 값 검증 및 자동 보정
+  const validateAndCorrect = useCallback((key, value) => {
+    if (key === 'targetYear') {
+      const year = parseInt(value);
+      if (isNaN(year)) return { value: '', error: '' };
+      if (year < VALIDATION.year.min) {
+        return { value: VALIDATION.year.min, error: `${VALIDATION.year.min}년 이후로 입력해주세요` };
+      }
+      if (year > VALIDATION.year.max) {
+        return { value: VALIDATION.year.max, error: `${VALIDATION.year.max}년 이전으로 입력해주세요` };
+      }
+      return { value: year, error: '' };
+    }
+    if (key === 'targetAge') {
+      const age = parseInt(value);
+      if (isNaN(age)) return { value: '', error: '' };
+      if (age < VALIDATION.age.min) {
+        return { value: VALIDATION.age.min, error: `${VALIDATION.age.min}세 이상으로 입력해주세요` };
+      }
+      if (age > VALIDATION.age.max) {
+        return { value: VALIDATION.age.max, error: `${VALIDATION.age.max}세 이하로 입력해주세요` };
+      }
+      return { value: age, error: '' };
+    }
+    return { value, error: '' };
+  }, [currentYear]);
+
+  // 실시간 검증 (에러 메시지만)
+  const validateInput = useCallback((key, value) => {
+    if (key === 'targetYear') {
+      const year = parseInt(value);
+      if (isNaN(year) || value === '') return '';
+      if (year < VALIDATION.year.min) return `${VALIDATION.year.min}년 이후로 입력해주세요`;
+      if (year > VALIDATION.year.max) return `${VALIDATION.year.max}년 이전으로 입력해주세요`;
+    }
+    if (key === 'targetAge') {
+      const age = parseInt(value);
+      if (isNaN(age) || value === '') return '';
+      if (age < VALIDATION.age.min) return `${VALIDATION.age.min}세 이상으로 입력해주세요`;
+      if (age > VALIDATION.age.max) return `${VALIDATION.age.max}세 이하로 입력해주세요`;
+    }
+    return '';
+  }, []);
 
   const steps = [
     {
@@ -33,7 +85,7 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
     {
       key: 'name',
       question: '', // Will be dynamic
-      placeholder: t.namePlaceholder || '이름을 입력해주세요',
+      placeholder: t.namePlaceholderAlt || '이름 대신 부르고 싶은 말을 적어도 돼요',
       type: 'text'
     },
     {
@@ -129,6 +181,7 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
     setTimeout(() => {
       setCurrentStep(prev => prev + 1);
       setInputValue('');
+      setValidationError('');
       setIsAnimating(false);
     }, 200);
   }, []);
@@ -138,6 +191,7 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
       setIsAnimating(true);
       setTimeout(() => {
         setCurrentStep(prev => prev - 1);
+        setValidationError('');
         // 이전 단계의 값을 inputValue에 복원
         const prevStepKey = steps[currentStep - 1]?.key;
         if (prevStepKey && currentPersonForm[prevStepKey]) {
@@ -155,17 +209,22 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
 
     const step = steps[currentStep];
     if (inputValue.trim()) {
+      // 검증 및 자동 보정
+      const { value: correctedValue } = validateAndCorrect(step.key, inputValue);
+      const finalValue = correctedValue !== '' ? correctedValue : inputValue;
+
       // Auto-set timeDirection based on year
       if (step.key === 'targetYear') {
-        const year = parseInt(inputValue);
+        const year = parseInt(finalValue);
         const timeDirection = year <= currentYear ? 'past' : 'future';
-        setCurrentPersonForm(prev => ({ ...prev, [step.key]: inputValue, timeDirection }));
+        setCurrentPersonForm(prev => ({ ...prev, [step.key]: finalValue, timeDirection }));
       } else {
-        setCurrentPersonForm(prev => ({ ...prev, [step.key]: inputValue }));
+        setCurrentPersonForm(prev => ({ ...prev, [step.key]: finalValue }));
       }
     }
+    setValidationError('');
     goToNextStep();
-  }, [inputValue, currentStep, goToNextStep, currentYear]);
+  }, [inputValue, currentStep, goToNextStep, currentYear, validateAndCorrect]);
 
   const handleChoiceSelect = useCallback((value) => {
     const step = steps[currentStep];
@@ -206,6 +265,232 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
 
   // Show progress bar only after first step (for initial form) or always (for modal)
   const showProgressBar = !isInitialForm || currentStep > 0;
+
+  // 편집 모드 - 모든 필드 한 번에 표시
+  const isEditMode = !isInitialForm && editingPersonIndex !== null;
+
+  if (isEditMode) {
+    return (
+      <div className="fixed inset-0 z-[200] flex flex-col bg-dark">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-coral/20">
+          <button
+            onClick={() => setShowPersonForm(false)}
+            className="px-3 py-1.5 rounded-full bg-coral/10 border border-coral/20 text-cream/85 text-sm font-medium"
+          >
+            <X size={16} className="inline mr-1" />
+            {t.cancel || '취소'}
+          </button>
+          <h2 className="text-lg font-display font-bold text-coral">
+            {t.editPerson || '정보 수정'}
+          </h2>
+          <button
+            onClick={handleSavePerson}
+            disabled={!canSubmit}
+            className="px-4 py-1.5 rounded-full bg-coral text-white text-sm font-medium disabled:opacity-50"
+          >
+            {t.savePerson || '저장'}
+          </button>
+        </div>
+
+        {/* Form Content */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          {/* 프로필 사진 */}
+          <div className="flex flex-col items-center mb-2">
+            <div className="relative">
+              <div
+                className="w-24 h-24 rounded-full border-3 border-coral/30 flex items-center justify-center overflow-hidden"
+                style={{
+                  background: currentPersonForm.photo
+                    ? `url(${currentPersonForm.photo}) center/cover`
+                    : 'linear-gradient(135deg, rgba(255, 140, 105, 0.3) 0%, rgba(255, 193, 122, 0.3) 100%)',
+                }}
+              >
+                {!currentPersonForm.photo && <span className="text-3xl">👤</span>}
+              </div>
+              <label className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-coral flex items-center justify-center cursor-pointer hover:bg-coral-dark transition-colors">
+                <Camera size={16} className="text-white" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleFileUpload(e, 'person')}
+                  className="hidden"
+                />
+              </label>
+            </div>
+            {currentPersonForm.photo && (
+              <button
+                onClick={() => setCurrentPersonForm(prev => ({ ...prev, photo: null }))}
+                className="mt-2 text-cream/40 text-xs hover:text-coral flex items-center gap-1"
+              >
+                <Trash2 size={12} />
+                {t.removePhoto || '사진 삭제'}
+              </button>
+            )}
+          </div>
+
+          {/* 관계 */}
+          <div className="bg-dark-card/50 rounded-2xl p-4">
+            <label className="block text-cream/50 text-xs mb-2">
+              {t.relationship || '관계'} *
+            </label>
+            <input
+              type="text"
+              value={currentPersonForm.relationship || ''}
+              onChange={(e) => setCurrentPersonForm(prev => ({ ...prev, relationship: e.target.value }))}
+              placeholder={t.relationshipPlaceholder || '예: 할머니, 아버지, 친구...'}
+              className="w-full bg-transparent border-b border-coral/30 text-cream text-lg outline-none focus:border-coral py-1"
+            />
+          </div>
+
+          {/* 이름 */}
+          <div className="bg-dark-card/50 rounded-2xl p-4">
+            <label className="block text-cream/50 text-xs mb-2">
+              {t.name || '이름'} *
+            </label>
+            <input
+              type="text"
+              value={currentPersonForm.name || ''}
+              onChange={(e) => setCurrentPersonForm(prev => ({ ...prev, name: e.target.value }))}
+              placeholder={t.namePlaceholder || '이름을 입력해주세요'}
+              className="w-full bg-transparent border-b border-coral/30 text-cream text-lg outline-none focus:border-coral py-1"
+            />
+          </div>
+
+          {/* 년도 & 나이 */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-dark-card/50 rounded-2xl p-4">
+              <label className="block text-cream/50 text-xs mb-2">
+                년도 * <span className="text-cream/30">({VALIDATION.year.min}~{VALIDATION.year.max})</span>
+              </label>
+              <input
+                type="number"
+                value={currentPersonForm.targetYear || ''}
+                onChange={(e) => {
+                  const year = e.target.value;
+                  const timeDirection = parseInt(year) <= currentYear ? 'past' : 'future';
+                  setCurrentPersonForm(prev => ({ ...prev, targetYear: year, timeDirection }));
+                }}
+                onBlur={(e) => {
+                  if (e.target.value) {
+                    const { value } = validateAndCorrect('targetYear', e.target.value);
+                    if (value !== '') {
+                      const timeDirection = value <= currentYear ? 'past' : 'future';
+                      setCurrentPersonForm(prev => ({ ...prev, targetYear: value, timeDirection }));
+                    }
+                  }
+                }}
+                placeholder="예: 1985"
+                className={`w-full bg-transparent border-b text-cream text-lg outline-none py-1 ${
+                  validateInput('targetYear', currentPersonForm.targetYear)
+                    ? 'border-red-400 focus:border-red-400'
+                    : 'border-coral/30 focus:border-coral'
+                }`}
+              />
+              {validateInput('targetYear', currentPersonForm.targetYear) && (
+                <p className="text-red-400 text-xs mt-1">{validateInput('targetYear', currentPersonForm.targetYear)}</p>
+              )}
+            </div>
+            <div className="bg-dark-card/50 rounded-2xl p-4">
+              <label className="block text-cream/50 text-xs mb-2">
+                {t.targetAge || '나이'} * <span className="text-cream/30">({VALIDATION.age.min}~{VALIDATION.age.max})</span>
+              </label>
+              <input
+                type="number"
+                value={currentPersonForm.targetAge || ''}
+                onChange={(e) => setCurrentPersonForm(prev => ({ ...prev, targetAge: e.target.value }))}
+                onBlur={(e) => {
+                  if (e.target.value) {
+                    const { value } = validateAndCorrect('targetAge', e.target.value);
+                    if (value !== '') {
+                      setCurrentPersonForm(prev => ({ ...prev, targetAge: value }));
+                    }
+                  }
+                }}
+                placeholder="예: 35"
+                className={`w-full bg-transparent border-b text-cream text-lg outline-none py-1 ${
+                  validateInput('targetAge', currentPersonForm.targetAge)
+                    ? 'border-red-400 focus:border-red-400'
+                    : 'border-coral/30 focus:border-coral'
+                }`}
+              />
+              {validateInput('targetAge', currentPersonForm.targetAge) && (
+                <p className="text-red-400 text-xs mt-1">{validateInput('targetAge', currentPersonForm.targetAge)}</p>
+              )}
+            </div>
+          </div>
+
+          {/* 성별 */}
+          <div className="bg-dark-card/50 rounded-2xl p-4">
+            <label className="block text-cream/50 text-xs mb-2">
+              {t.gender || '성별'} *
+            </label>
+            <div className="flex gap-2">
+              {[
+                { value: 'female', label: t.female || '여성' },
+                { value: 'male', label: t.male || '남성' },
+                { value: 'other', label: t.other_gender || '기타' }
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setCurrentPersonForm(prev => ({ ...prev, gender: option.value }))}
+                  className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
+                    currentPersonForm.gender === option.value
+                      ? 'bg-coral text-white'
+                      : 'bg-white/5 text-cream/70 hover:bg-white/10'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 나를 부르는 호칭 */}
+          <div className="bg-dark-card/50 rounded-2xl p-4">
+            <label className="block text-cream/50 text-xs mb-2">
+              나를 부르는 호칭 *
+            </label>
+            <input
+              type="text"
+              value={currentPersonForm.myNickname || ''}
+              onChange={(e) => setCurrentPersonForm(prev => ({ ...prev, myNickname: e.target.value }))}
+              placeholder="예: 우리 아들, 막내야..."
+              className="w-full bg-transparent border-b border-coral/30 text-cream text-lg outline-none focus:border-coral py-1"
+            />
+          </div>
+
+          {/* 추억 (선택) */}
+          <div className="bg-dark-card/50 rounded-2xl p-4">
+            <label className="block text-cream/50 text-xs mb-2">
+              {t.memories || '함께한 추억'} ({t.photoOptional || '선택'})
+            </label>
+            <textarea
+              value={currentPersonForm.memories || ''}
+              onChange={(e) => setCurrentPersonForm(prev => ({ ...prev, memories: e.target.value }))}
+              placeholder={t.memoriesPlaceholder || '예: 함께 시장 가던 것...'}
+              rows={3}
+              className="w-full bg-transparent border border-coral/20 rounded-xl text-cream outline-none focus:border-coral p-3 resize-none"
+            />
+          </div>
+
+          {/* 삭제 버튼 */}
+          <div className="pt-4 pb-8">
+            <button
+              onClick={() => {
+                handleDeletePerson(editingPersonIndex);
+                setShowPersonForm(false);
+              }}
+              className="w-full py-3 text-red-400/70 text-sm hover:text-red-400 transition-colors"
+            >
+              <Trash2 size={14} className="inline mr-1" />
+              {t.deletePerson || '삭제하기'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -282,13 +567,33 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
                 <div className="relative">
                   <input
                     ref={inputRef}
-                    type="text"
+                    type={currentStepData.inputType === 'number' ? 'number' : 'text'}
                     value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
+                    onChange={(e) => {
+                      setInputValue(e.target.value);
+                      // 실시간 검증
+                      const error = validateInput(currentStepData.key, e.target.value);
+                      setValidationError(error);
+                    }}
+                    onBlur={() => {
+                      // 포커스 아웃 시 자동 보정
+                      if (inputValue && (currentStepData.key === 'targetYear' || currentStepData.key === 'targetAge')) {
+                        const { value } = validateAndCorrect(currentStepData.key, inputValue);
+                        if (value !== '' && value !== inputValue) {
+                          setInputValue(String(value));
+                          setValidationError('');
+                        }
+                      }
+                    }}
                     onKeyPress={(e) => e.key === 'Enter' && handleTextSubmit()}
                     placeholder={currentStepData.placeholder}
-                    className="w-full px-0 py-3 bg-transparent border-b-2 border-white/20 focus:border-coral text-cream text-xl placeholder:text-cream/30 outline-none transition-colors"
+                    className={`w-full px-0 py-3 bg-transparent border-b-2 text-cream text-xl placeholder:text-cream/30 outline-none transition-colors ${
+                      validationError ? 'border-red-400 focus:border-red-400' : 'border-white/20 focus:border-coral'
+                    }`}
                   />
+                  {validationError && (
+                    <p className="text-red-400 text-sm mt-2">{validationError}</p>
+                  )}
                 </div>
                 <div className="flex justify-between items-center pt-2">
                   {/* 이전 단계 버튼 */}

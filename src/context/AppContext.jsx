@@ -22,6 +22,7 @@ export function AppProvider({ children }) {
   const FREE_MESSAGE_LIMIT = 1;
   const [showPaymentPopup, setShowPaymentPopup] = useState(false);
   const [showLoginRequired, setShowLoginRequired] = useState(false);
+  const [showMyPage, setShowMyPage] = useState(false);
 
   // 로그인 후 결제창 표시 여부 (localStorage에 저장해서 OAuth 리디렉트 후에도 유지)
   const [pendingPaymentAfterLogin, setPendingPaymentAfterLogin] = useState(() => {
@@ -342,6 +343,22 @@ export function AppProvider({ children }) {
     setShowNameInput(false);
   }, [pendingAuthUser]);
 
+  // 프로필 업데이트 핸들러 (마이페이지용)
+  const handleUpdateProfile = useCallback(async (updates) => {
+    if (!authUser) return;
+
+    // DB에 저장
+    if (supabase) {
+      await db.updateProfile(authUser.id, updates);
+    }
+
+    // authUser 상태 업데이트
+    setAuthUser(prev => ({
+      ...prev,
+      ...updates,
+    }));
+  }, [authUser]);
+
   const handleFileUpload = useCallback((e, target) => {
     const file = e.target.files[0];
     if (file) {
@@ -359,9 +376,7 @@ export function AppProvider({ children }) {
       return;
     }
     if (additionalPeople.length >= 1 && !authUser.isPremium) {
-      if (window.confirm(t.upgradeRequired + '\n\n' + t.upgradeToPremium)) {
-        alert(t.paymentPage);
-      }
+      setShowPaymentPopup(true);
       return;
     }
     setCurrentPersonForm({
@@ -714,11 +729,14 @@ export function AppProvider({ children }) {
       setShowPaymentPopup,
       showLoginRequired,
       setShowLoginRequired,
+      showMyPage,
+      setShowMyPage,
       FREE_MESSAGE_LIMIT,
       t,
       handleLogin,
       handleLogout,
       handleSaveName,
+      handleUpdateProfile,
       handleFileUpload,
       handleAddNewPerson,
       handleEditPerson,
@@ -749,10 +767,12 @@ export function AppProvider({ children }) {
       messageCount,
       showPaymentPopup,
       showLoginRequired,
+      showMyPage,
       t,
       handleLogin,
       handleLogout,
       handleSaveName,
+      handleUpdateProfile,
       handleFileUpload,
       handleAddNewPerson,
       handleEditPerson,

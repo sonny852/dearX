@@ -5,7 +5,7 @@ const LandingHero = memo(function LandingHero({ onStart }) {
   const { t } = useApp();
 
   return (
-    <div className="flex flex-col justify-center items-center pb-20">
+    <div className="flex flex-col justify-center items-center pb-20 pt-16 sm:pt-0">
       {/* Background gradient */}
       <div
         className="absolute inset-0"

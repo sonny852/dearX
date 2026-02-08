@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
+import { Edit2 } from 'lucide-react';
 import AuthBar from './components/AuthBar';
 import LanguageSelector from './components/LanguageSelector';
 import LandingHero from './components/LandingHero';
@@ -10,6 +11,7 @@ import Footer from './components/Footer';
 import SampleConversation from './components/SampleConversation';
 import PaymentPopup from './components/PaymentPopup';
 import NameInputPopup from './components/NameInputPopup';
+import MyPage from './components/MyPage';
 
 function AppContent() {
   const {
@@ -23,6 +25,8 @@ function AppContent() {
     setShowPaymentPopup,
     showLoginRequired,
     setShowLoginRequired,
+    showMyPage,
+    setShowMyPage,
     showForm,
     setShowForm,
     authUser,
@@ -30,6 +34,7 @@ function AppContent() {
     additionalPeople,
     handleStartChatWithPerson,
     handleAddNewPerson,
+    handleEditPerson,
     handleBackFromChat,
     t,
   } = useApp();
@@ -47,6 +52,11 @@ function AppContent() {
       }
       if (showLoginRequired) {
         setShowLoginRequired(false);
+        e.preventDefault();
+        return;
+      }
+      if (showMyPage) {
+        setShowMyPage(false);
         e.preventDefault();
         return;
       }
@@ -69,7 +79,7 @@ function AppContent() {
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [showChat, showPersonForm, showPeopleManager, showPaymentPopup, showLoginRequired, setShowChat, setShowPersonForm, setShowPeopleManager, setShowPaymentPopup, setShowLoginRequired, handleBackFromChat]);
+  }, [showChat, showPersonForm, showPeopleManager, showPaymentPopup, showLoginRequired, showMyPage, setShowChat, setShowPersonForm, setShowPeopleManager, setShowPaymentPopup, setShowLoginRequired, setShowMyPage, handleBackFromChat]);
 
   // 모달 열릴 때 히스토리 푸시 (각 모달별로 한 번만)
   useEffect(() => {
@@ -90,6 +100,12 @@ function AppContent() {
     }
   }, [showPersonForm]);
 
+  useEffect(() => {
+    if (showMyPage) {
+      window.history.pushState({ modal: 'myPage' }, '');
+    }
+  }, [showMyPage]);
+
   const handleStartJourney = () => {
     setStage('conversation');
   };
@@ -101,7 +117,7 @@ function AppContent() {
     }
   }, [showForm, stage]);
 
-  const isModalOpen = showChat || showPersonForm || showPeopleManager;
+  const isModalOpen = showChat || showPersonForm || showPeopleManager || showMyPage;
 
   // 로그인 + 등록된 사람이 있으면 대시보드 표시
   const showDashboard = authUser && additionalPeople.length > 0;
@@ -123,6 +139,13 @@ function AppContent() {
       setShowForm(false);
     }
   }, [authUser, authLoading, setShowForm]);
+
+  // 비로그인 사용자가 폼을 닫으면 hero로 돌아가기
+  useEffect(() => {
+    if (!authUser && !showForm && stage === 'form') {
+      setStage('hero');
+    }
+  }, [authUser, showForm, stage]);
 
   // 로그인 상태 확인 중 로딩 화면
   if (authLoading) {
@@ -167,27 +190,42 @@ function AppContent() {
             {/* 대화 상대 목록 */}
             <div className="space-y-3 mb-6">
               {additionalPeople.map((person, index) => (
-                <button
+                <div
                   key={index}
-                  onClick={() => handleStartChatWithPerson(person)}
                   className="w-full p-4 bg-dark-card border border-coral/20 rounded-2xl flex items-center gap-4 hover:border-coral/40 transition-all group"
                 >
-                  <div
-                    className="w-14 h-14 rounded-full border-2 border-coral/30 flex-shrink-0"
-                    style={{
-                      background: person.photo
-                        ? `url(${person.photo}) center/cover`
-                        : 'linear-gradient(135deg, rgba(255, 140, 105, 0.3) 0%, rgba(255, 193, 122, 0.3) 100%)',
-                    }}
-                  />
-                  <div className="flex-1 text-left">
-                    <p className="text-coral font-medium text-lg">{person.name}</p>
-                    <p className="text-cream/50 text-sm">
-                      {person.relationship} · {person.targetAge}{t.ageUnit}
-                    </p>
-                  </div>
-                  <span className="text-coral/50 group-hover:text-coral transition-colors">→</span>
-                </button>
+                  <button
+                    onClick={() => handleStartChatWithPerson(person)}
+                    className="flex items-center gap-4 flex-1 text-left"
+                  >
+                    <div
+                      className="w-14 h-14 rounded-full border-2 border-coral/30 flex-shrink-0"
+                      style={{
+                        background: person.photo
+                          ? `url(${person.photo}) center/cover`
+                          : 'linear-gradient(135deg, rgba(255, 140, 105, 0.3) 0%, rgba(255, 193, 122, 0.3) 100%)',
+                      }}
+                    />
+                    <div className="flex-1">
+                      <p className="text-coral font-medium text-lg">{person.name}</p>
+                      <p className="text-cream/50 text-sm">
+                        {person.relationship} · {person.targetAge}{t.ageUnit}
+                      </p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleEditPerson(index)}
+                    className="w-10 h-10 rounded-full bg-coral/10 flex items-center justify-center text-coral/50 hover:text-coral hover:bg-coral/20 transition-all"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleStartChatWithPerson(person)}
+                    className="text-coral/50 group-hover:text-coral transition-colors"
+                  >
+                    →
+                  </button>
+                </div>
               ))}
             </div>
 
@@ -205,7 +243,7 @@ function AppContent() {
 
       {/* Hero Screen - 비로그인 또는 등록된 사람이 없을 때 */}
       {!showDashboard && stage === 'hero' && !isModalOpen && (
-        <div className="h-screen flex items-center justify-center animate-fadeIn">
+        <div className="min-h-screen flex items-center justify-center animate-fadeIn py-10">
           <LandingHero onStart={handleStartJourney} />
         </div>
       )}
@@ -258,6 +296,9 @@ function AppContent() {
 
       {/* Name Input Popup - 첫 로그인 시 이름 입력 */}
       <NameInputPopup />
+
+      {/* My Page - 마이페이지 */}
+      <MyPage />
 
       <style>{`
         @keyframes fadeIn {
