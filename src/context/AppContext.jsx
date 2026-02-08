@@ -92,7 +92,6 @@ export function AppProvider({ children }) {
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (authLoading) {
-        console.log('Auth loading timeout - forcing completion');
         setAuthLoading(false);
       }
     }, 3000);
@@ -106,9 +105,7 @@ export function AppProvider({ children }) {
     // 초기 세션 확인
     const initAuth = async () => {
       try {
-        console.log('initAuth started, supabase:', !!supabase);
         if (!supabase) {
-          console.log('No supabase, setting authLoading false');
           setAuthLoading(false);
           return;
         }
@@ -127,20 +124,16 @@ export function AppProvider({ children }) {
         try {
           const result = await getUserWithTimeout();
           user = result.data?.user;
-          console.log('Got user:', user?.email);
         } catch (e) {
-          console.log('getUser failed:', e.message);
+          // Auth error - silent in production
         }
         if (user) {
-          console.log('initAuth user metadata:', user.user_metadata);
           const { data: profile } = await db.getOrCreateProfile(user.id);
-          console.log('initAuth profile:', profile);
           // Google은 full_name, Kakao는 name 사용
           const oauthName = user.user_metadata?.full_name
             || user.user_metadata?.name
             || user.email?.split('@')[0]
             || 'User';
-          console.log('initAuth oauthName:', oauthName);
 
           // 프로필에 이름이 저장되어 있으면 그대로 사용, 없으면 이름 입력 요청
           if (profile?.name) {
@@ -164,8 +157,7 @@ export function AppProvider({ children }) {
           }
 
           // 저장된 사람 목록 로드
-          const { data: people, error: peopleError } = await db.getPeople(user.id);
-          console.log('Loaded people:', people?.length, 'error:', peopleError);
+          const { data: people } = await db.getPeople(user.id);
           if (people && people.length > 0) {
             setAdditionalPeople(people.map(p => ({
               id: p.id,
@@ -201,17 +193,13 @@ export function AppProvider({ children }) {
     let subscription;
     try {
       const { data } = auth.onAuthStateChange(async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.email);
         if (event === 'SIGNED_IN' && session?.user) {
-          console.log('User metadata:', session.user.user_metadata);
           const { data: profile } = await db.getOrCreateProfile(session.user.id);
-          console.log('Profile from DB:', profile);
           // Google은 full_name 또는 name을 사용, Kakao는 name을 사용
           const oauthName = session.user.user_metadata?.full_name
             || session.user.user_metadata?.name
             || session.user.email?.split('@')[0]
             || 'User';
-          console.log('OAuth name:', oauthName);
           const isPremium = profile?.is_premium || false;
 
           // 프로필에 이름이 저장되어 있으면 그대로 사용, 없으면 이름 입력 요청
@@ -593,12 +581,9 @@ export function AppProvider({ children }) {
       db.saveMessage(authUser.id, activePerson.id, { role: 'user', content: input });
     }
 
-    // GPT API 호출 시도
-    console.log('Chat Debug:', { CHAT_FUNCTION_URL, hasSupabase: !!supabase, activePerson: activePerson?.name });
+    // API 호출
     if (CHAT_FUNCTION_URL) {
       try {
-        console.log('Attempting API call to:', CHAT_FUNCTION_URL);
-
         const requestBody = {
           person: activePerson,
           messages: [...messages, userMessage].map(m => ({
@@ -607,8 +592,6 @@ export function AppProvider({ children }) {
           })),
           userName: authUser?.name || 'User',
         };
-        console.log('Request body:', requestBody);
-        console.log('Making fetch request now...');
 
         const anonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
         const response = await fetch(CHAT_FUNCTION_URL, {
@@ -620,9 +603,7 @@ export function AppProvider({ children }) {
           body: JSON.stringify(requestBody),
         });
 
-        console.log('Response status:', response.status);
         const data = await response.json();
-        console.log('Response data:', data);
         if (response.ok) {
           const newMessage = {
             role: 'assistant',
@@ -646,15 +627,11 @@ export function AppProvider({ children }) {
           return;
         }
       } catch (error) {
-        console.error('Chat API error:', error);
-        console.log('Falling through to fallback due to error');
+        // API error - using fallback
       }
-    } else {
-      console.log('Skipping API call - condition not met');
     }
 
     // Fallback: 기본 응답 (API 실패 또는 Demo mode)
-    console.log('Using fallback response');
     setTimeout(async () => {
       const responses = [
         `${activePerson.favoriteWords || '괜찮아요. 당신은 충분히 잘하고 있어요.'}`,

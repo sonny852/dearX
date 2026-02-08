@@ -9,9 +9,19 @@ const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions'; // Vision용
 const DALLE_API_URL = 'https://api.openai.com/v1/images/generations';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// 허용된 도메인 목록
+const ALLOWED_ORIGINS = [
+  'https://dearx.io',
+  'https://www.dearx.io',
+  'http://localhost:3000', // 개발용
+];
+
+const getCorsHeaders = (origin: string | null) => {
+  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
 };
 
 interface Person {
@@ -328,15 +338,16 @@ ${selfContext}
 }
 
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin);
+
   // CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    console.log('=== Chat Function Start ===');
-    console.log('ANTHROPIC_API_KEY exists:', !!ANTHROPIC_API_KEY);
-    console.log('ANTHROPIC_API_KEY length:', ANTHROPIC_API_KEY?.length || 0);
+    // 민감한 정보 로깅 제거 (보안)
 
     if (!ANTHROPIC_API_KEY) {
       throw new Error('ANTHROPIC_API_KEY not configured (DearX-API-KEY secret missing)');
