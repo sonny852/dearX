@@ -1,14 +1,13 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import AuthBar from './components/AuthBar';
 import LanguageSelector from './components/LanguageSelector';
 import LandingHero from './components/LandingHero';
-import MyInfoForm from './components/MyInfoForm';
 import ChatInterface from './components/ChatInterface';
 import PeopleManager from './components/PeopleManager';
 import PersonForm from './components/PersonForm';
 import Footer from './components/Footer';
-import PaperAirplane from './components/PaperAirplane';
+import SampleConversation from './components/SampleConversation';
 
 function AppContent() {
   const {
@@ -17,55 +16,54 @@ function AppContent() {
     showPeopleManager,
     showForm,
     setShowForm,
-    setScrollProgress,
   } = useApp();
 
-  const landingRef = useRef(null);
+  const [stage, setStage] = useState('hero'); // hero -> conversation -> form
 
-  const handleScroll = useCallback(() => {
-    if (landingRef.current && !showChat && !showPeopleManager) {
-      const scrolled = window.scrollY;
-      const maxScroll = landingRef.current.offsetHeight - window.innerHeight;
-      const progress = Math.min(scrolled / maxScroll, 1);
-      setScrollProgress(progress);
-      if (progress >= 0.4 && !showForm) setShowForm(true);
-    }
-  }, [showChat, showPeopleManager, showForm, setScrollProgress, setShowForm]);
+  const handleStartJourney = () => {
+    setStage('conversation');
+  };
 
+  // conversation 끝나면 form 표시 (SampleConversation에서 호출)
   useEffect(() => {
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [handleScroll]);
+    if (showForm && stage === 'conversation') {
+      setStage('form');
+    }
+  }, [showForm, stage]);
 
   const isModalOpen = showChat || showPersonForm || showPeopleManager;
 
   return (
-    <div
-      className="min-h-screen bg-dark text-cream font-serif"
-      style={{ overflow: isModalOpen ? 'hidden' : 'auto' }}
-    >
-      {/* Auth Bar - Always visible */}
-      <AuthBar />
+    <div className="min-h-screen bg-dark text-cream font-serif overflow-hidden">
+      {/* Auth Bar */}
+      {stage === 'hero' && !isModalOpen && <AuthBar />}
 
-      {/* Language Selector - Hidden when modals are open */}
-      {!isModalOpen && <LanguageSelector />}
+      {/* Language Selector */}
+      {stage === 'hero' && !isModalOpen && <LanguageSelector />}
 
-      {/* Landing & Form Section */}
-      <div
-        ref={landingRef}
-        className="min-h-[200vh] transition-opacity duration-800"
-        style={{
-          opacity: isModalOpen ? 0 : 1,
-          pointerEvents: isModalOpen ? 'none' : 'auto',
-        }}
-      >
-        <LandingHero />
-        <PaperAirplane />
-        {showForm && <MyInfoForm />}
-      </div>
+      {/* Hero Screen */}
+      {stage === 'hero' && !isModalOpen && (
+        <div className="h-screen flex items-center justify-center animate-fadeIn">
+          <LandingHero onStart={handleStartJourney} />
+        </div>
+      )}
 
-      {/* Footer - Hidden when modals are open */}
-      {!isModalOpen && <Footer />}
+      {/* Conversation Animation Screen */}
+      {stage === 'conversation' && !isModalOpen && (
+        <div className="h-screen flex items-center justify-center p-4 animate-fadeIn">
+          <SampleConversation onComplete={() => setShowForm(true)} />
+        </div>
+      )}
+
+      {/* Form Screen */}
+      {stage === 'form' && !isModalOpen && (
+        <div className="min-h-screen animate-fadeIn">
+          <PersonForm isInitialForm={true} />
+        </div>
+      )}
+
+      {/* Footer */}
+      {stage === 'form' && !isModalOpen && <Footer />}
 
       {/* Chat Interface Modal */}
       {showChat && <ChatInterface />}
@@ -75,6 +73,16 @@ function AppContent() {
 
       {/* Person Form Modal */}
       <PersonForm />
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.8s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 }

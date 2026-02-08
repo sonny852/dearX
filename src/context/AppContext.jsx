@@ -18,20 +18,10 @@ export function AppProvider({ children }) {
   const [showChat, setShowChat] = useState(false);
   const [editingPersonIndex, setEditingPersonIndex] = useState(null);
 
-  const [myInfo, setMyInfo] = useState({
-    name: '',
-    currentPhoto: null,
-    pastPhoto: null,
-    targetAge: '',
-    currentAge: '',
-    gender: '',
-    timeDirection: 'past',
-    personality: '',
-    hobbies: '',
-    memories: '',
-    family: '',
-    speechStyle: '',
-  });
+  // Message count for free tier (7 free messages)
+  const FREE_MESSAGE_LIMIT = 7;
+  const [messageCount, setMessageCount] = useState(0);
+  const [showPaymentPopup, setShowPaymentPopup] = useState(false);
 
   const [additionalPeople, setAdditionalPeople] = useState([]);
 
@@ -42,6 +32,7 @@ export function AppProvider({ children }) {
     targetAge: '',
     gender: '',
     timeDirection: 'past',
+    myNickname: '',
     personality: '',
     speechStyle: '',
     hobbies: '',
@@ -80,7 +71,6 @@ export function AppProvider({ children }) {
           isPremium: profile?.is_premium || false,
           premiumExpiresAt: profile?.premium_expires_at,
         });
-        setMyInfo(prev => prev.name ? prev : { ...prev, name: userName });
 
         // 저장된 사람 목록 로드
         const { data: people } = await db.getPeople(user.id);
@@ -119,7 +109,6 @@ export function AppProvider({ children }) {
           isPremium: profile?.is_premium || false,
           premiumExpiresAt: profile?.premium_expires_at,
         });
-        setMyInfo(prev => prev.name ? prev : { ...prev, name: userName });
 
         // 저장된 사람 목록 로드
         const { data: people } = await db.getPeople(session.user.id);
@@ -181,7 +170,7 @@ export function AppProvider({ children }) {
     }
     setAuthUser(null);
     setAdditionalPeople([]);
-    setMyInfo({ name: '', currentPhoto: null, pastPhoto: null, targetAge: '', currentAge: '', gender: '', timeDirection: 'past', personality: '', hobbies: '', memories: '', family: '', speechStyle: '' });
+    setMessageCount(0);
   }, []);
 
   const handleFileUpload = useCallback((e, target) => {
@@ -189,36 +178,11 @@ export function AppProvider({ children }) {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        if (target === 'myCurrentPhoto') {
-          setMyInfo((prev) => ({ ...prev, currentPhoto: reader.result }));
-        } else if (target === 'myPastPhoto') {
-          setMyInfo((prev) => ({ ...prev, pastPhoto: reader.result }));
-        } else {
-          setCurrentPersonForm((prev) => ({ ...prev, photo: reader.result }));
-        }
+        setCurrentPersonForm((prev) => ({ ...prev, photo: reader.result }));
       };
       reader.readAsDataURL(file);
     }
   }, []);
-
-  const handleMyFormSubmit = useCallback(() => {
-    if (!myInfo.name || !myInfo.targetAge || !myInfo.currentAge || !myInfo.gender || !myInfo.currentPhoto) {
-      alert(t.requiredFieldsAlert);
-      return;
-    }
-    const greeting = `안녕! 나 ${myInfo.targetAge}살 ${myInfo.name}이야~ ${myInfo.currentAge}살이 된 내가 찾아왔구나! 신기하다~`;
-    setActivePerson({ ...myInfo, relationship: 'self' });
-    setMessages([
-      {
-        role: 'assistant',
-        content: greeting,
-        timestamp: '2015.06.20',
-        mode: myInfo.timeDirection,
-      },
-    ]);
-    setShowChat(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [myInfo, t.requiredFieldsAlert]);
 
   const handleAddNewPerson = useCallback(() => {
     if (!authUser) {
@@ -238,6 +202,7 @@ export function AppProvider({ children }) {
       targetAge: '',
       gender: '',
       timeDirection: 'past',
+      myNickname: '',
       personality: '',
       speechStyle: '',
       hobbies: '',
@@ -324,10 +289,11 @@ export function AppProvider({ children }) {
   }, [currentPersonForm, editingPersonIndex, t.requiredFieldsAlert, authUser, additionalPeople]);
 
   const handleStartChatWithPerson = useCallback((person) => {
-    const greeting = `${person.name}... 오랜만이에요. ${
+    const nickname = person.myNickname || '얘야';
+    const greeting = `${nickname}... 오랜만이구나. ${
       person.memories
-        ? '우리 함께 ' + person.memories.split(',')[0] + '했던 거 기억하시나요?'
-        : '보고 싶었어요.'
+        ? '우리 함께 ' + person.memories.split(',')[0] + '했던 거 기억나니?'
+        : '보고 싶었어.'
     }`;
     setActivePerson(person);
     setMessages([
@@ -338,14 +304,22 @@ export function AppProvider({ children }) {
         mode: person.timeDirection,
       },
     ]);
+    setMessageCount(0); // Reset message count when starting new chat
     setShowChat(true);
     setShowPeopleManager(false);
+    setShowPersonForm(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   // 메시지 전송 (Claude API 연동)
   const sendMessage = useCallback(async () => {
     if (!input.trim() || !activePerson) return;
+
+    // Check message limit for non-premium users
+    if (!authUser?.isPremium && messageCount >= FREE_MESSAGE_LIMIT) {
+      setShowPaymentPopup(true);
+      return;
+    }
 
     const userMessage = {
       role: 'user',
@@ -360,6 +334,7 @@ export function AppProvider({ children }) {
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsTyping(true);
+    setMessageCount((prev) => prev + 1);
 
     // GPT API 호출 시도
     console.log('Chat Debug:', { CHAT_FUNCTION_URL, hasSupabase: !!supabase, activePerson: activePerson?.name });
@@ -373,7 +348,7 @@ export function AppProvider({ children }) {
             role: m.role,
             content: m.content,
           })),
-          userName: myInfo.name || authUser?.name || 'User',
+          userName: authUser?.name || 'User',
         };
         console.log('Request body:', requestBody);
         console.log('Making fetch request now...');
@@ -436,7 +411,7 @@ export function AppProvider({ children }) {
       ]);
       setIsTyping(false);
     }, 1500);
-  }, [input, activePerson, messages, myInfo.name, authUser?.name]);
+  }, [input, activePerson, messages, authUser, messageCount]);
 
   const handleBackFromChat = useCallback(() => {
     setShowChat(false);
@@ -461,8 +436,6 @@ export function AppProvider({ children }) {
       setShowChat,
       editingPersonIndex,
       setEditingPersonIndex,
-      myInfo,
-      setMyInfo,
       additionalPeople,
       setAdditionalPeople,
       currentPersonForm,
@@ -479,11 +452,15 @@ export function AppProvider({ children }) {
       setAuthUser,
       authLoading,
       setAuthLoading,
+      messageCount,
+      setMessageCount,
+      showPaymentPopup,
+      setShowPaymentPopup,
+      FREE_MESSAGE_LIMIT,
       t,
       handleLogin,
       handleLogout,
       handleFileUpload,
-      handleMyFormSubmit,
       handleAddNewPerson,
       handleEditPerson,
       handleDeletePerson,
@@ -500,7 +477,6 @@ export function AppProvider({ children }) {
       showPersonForm,
       showChat,
       editingPersonIndex,
-      myInfo,
       additionalPeople,
       currentPersonForm,
       activePerson,
@@ -509,11 +485,12 @@ export function AppProvider({ children }) {
       isTyping,
       authUser,
       authLoading,
+      messageCount,
+      showPaymentPopup,
       t,
       handleLogin,
       handleLogout,
       handleFileUpload,
-      handleMyFormSubmit,
       handleAddNewPerson,
       handleEditPerson,
       handleDeletePerson,

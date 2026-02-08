@@ -1,6 +1,7 @@
 import React, { memo, useRef, useEffect } from 'react';
 import { Send, Clock, Users } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import PaymentPopup from './PaymentPopup';
 
 const ChatInterface = memo(function ChatInterface() {
   const {
@@ -12,8 +13,13 @@ const ChatInterface = memo(function ChatInterface() {
     sendMessage,
     handleBackFromChat,
     setShowPeopleManager,
+    messageCount,
+    FREE_MESSAGE_LIMIT,
+    authUser,
     t,
   } = useApp();
+
+  const remainingFreeMessages = FREE_MESSAGE_LIMIT - messageCount;
 
   const messagesEndRef = useRef(null);
 
@@ -26,11 +32,11 @@ const ChatInterface = memo(function ChatInterface() {
   return (
     <div className="fixed inset-0 bg-dark z-[100] flex flex-col">
       {/* Header */}
-      <div className="p-4 sm:p-8 border-b border-coral/20 bg-gradient-to-b from-dark/95 to-dark/80">
-        <div className="max-w-[900px] mx-auto flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-0 sm:justify-between">
-          <div className="flex items-center gap-3 sm:gap-4">
+      <div className="p-4 border-b border-coral/20 bg-gradient-to-b from-dark/95 to-dark/80">
+        <div className="max-w-[900px] mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <div
-              className="w-10 h-10 sm:w-[50px] sm:h-[50px] rounded-full border-2 border-coral/30 flex-shrink-0"
+              className="w-10 h-10 rounded-full border-2 border-coral/30 flex-shrink-0"
               style={{
                 background: (activePerson.currentPhoto || activePerson.photo)
                   ? `url(${activePerson.currentPhoto || activePerson.photo}) center/cover`
@@ -38,33 +44,21 @@ const ChatInterface = memo(function ChatInterface() {
               }}
             />
             <div className="min-w-0">
-              <h2 className="m-0 text-lg sm:text-xl font-display font-bold text-coral truncate">
+              <h2 className="m-0 text-base font-display font-bold text-coral truncate">
                 {activePerson.name}
               </h2>
-              <p className="m-0 text-xs sm:text-sm text-cream/50">
+              <p className="m-0 text-xs text-cream/50">
                 {activePerson.targetAge}세 · {activePerson.timeDirection === 'past' ? t.past : t.future}
               </p>
             </div>
           </div>
 
-          <div className="flex gap-2 flex-shrink-0 self-end sm:self-auto">
-            {activePerson.relationship === 'self' && (
-              <button
-                onClick={() => setShowPeopleManager(true)}
-                className="px-3 py-2 bg-coral/15 border border-coral/30 rounded-xl text-coral cursor-pointer text-xs flex items-center gap-1.5 hover:bg-coral/25 transition-colors whitespace-nowrap"
-              >
-                <Users size={14} />
-                <span className="hidden xs:inline">{t.addMorePeople}</span>
-                <span className="xs:hidden">대화상대 추가</span>
-              </button>
-            )}
-            <button
-              onClick={handleBackFromChat}
-              className="px-3 py-2 bg-coral/10 border border-coral/30 rounded-xl text-coral cursor-pointer text-xs hover:bg-coral/20 transition-colors"
-            >
-              {t.back}
-            </button>
-          </div>
+          <button
+            onClick={handleBackFromChat}
+            className="px-3 py-2 bg-coral/10 border border-coral/30 rounded-xl text-coral cursor-pointer text-xs hover:bg-coral/20 transition-colors"
+          >
+            {t.back}
+          </button>
         </div>
       </div>
 
@@ -144,28 +138,41 @@ const ChatInterface = memo(function ChatInterface() {
 
       {/* Input */}
       <div className="p-8 border-t border-coral/20 bg-gradient-to-t from-dark/95 to-dark/80">
-        <div className="max-w-[900px] mx-auto flex gap-4 items-center">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-            placeholder={t.sendMessage}
-            className="flex-1 px-6 py-4 text-lg bg-dark-card border border-coral/30 rounded-full text-cream outline-none focus:border-coral/60 transition-colors"
-          />
-          <button
-            onClick={sendMessage}
-            disabled={!input.trim()}
-            className={`p-4 w-14 h-14 rounded-full border-none flex items-center justify-center transition-all ${
-              input.trim()
-                ? 'bg-gradient-to-br from-coral to-coral-dark cursor-pointer shadow-lg shadow-coral/40'
-                : 'bg-coral/20 cursor-not-allowed'
-            }`}
-          >
-            <Send size={20} color="#ffffff" />
-          </button>
+        <div className="max-w-[900px] mx-auto">
+          {/* Free message counter for non-premium users */}
+          {!authUser?.isPremium && remainingFreeMessages > 0 && (
+            <div className="text-center mb-3">
+              <span className="text-cream/50 text-xs">
+                {(t.freeMessagesRemaining || '무료 대화 {{count}}회 남음').replace('{{count}}', remainingFreeMessages)}
+              </span>
+            </div>
+          )}
+          <div className="flex gap-4 items-center">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+              placeholder={t.sendMessage}
+              className="flex-1 px-6 py-4 text-lg bg-dark-card border border-coral/30 rounded-full text-cream outline-none focus:border-coral/60 transition-colors"
+            />
+            <button
+              onClick={sendMessage}
+              disabled={!input.trim()}
+              className={`p-4 w-14 h-14 rounded-full border-none flex items-center justify-center transition-all ${
+                input.trim()
+                  ? 'bg-gradient-to-br from-coral to-coral-dark cursor-pointer shadow-lg shadow-coral/40'
+                  : 'bg-coral/20 cursor-not-allowed'
+              }`}
+            >
+              <Send size={20} color="#ffffff" />
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Payment Popup */}
+      <PaymentPopup />
     </div>
   );
 });

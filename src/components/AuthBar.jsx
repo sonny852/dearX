@@ -12,22 +12,22 @@ const AuthBar = memo(function AuthBar() {
   return (
     <>
       {/* Top-right bar */}
-      <div className="fixed top-6 right-6 z-[2000] flex items-center gap-2">
+      <div className="fixed top-4 right-4 z-[2000] flex items-center gap-2">
         {authUser ? (
-          <div className="flex items-center gap-2 bg-dark-card backdrop-blur-xl px-2.5 py-2 rounded-full border border-coral/30 shadow-lg">
+          <div className="flex items-center gap-1.5 bg-dark/80 backdrop-blur-xl px-1.5 py-1 rounded-full border border-coral/20">
             <button
               onClick={() => alert(t.myPage)}
-              className="w-[42px] h-[42px] rounded-full border border-coral/25 flex items-center justify-center text-coral cursor-pointer transition-colors hover:bg-coral/20"
+              className="w-8 h-8 rounded-full border border-coral/25 flex items-center justify-center text-coral cursor-pointer transition-colors hover:bg-coral/20"
               style={{ background: 'rgba(255, 140, 105, 0.12)' }}
             >
-              <User size={18} />
+              <User size={14} />
             </button>
-            <div className="px-3 h-[42px] flex items-center rounded-full bg-coral/10 border border-coral/20 text-cream/85 text-sm font-semibold">
+            <div className="px-2.5 h-8 flex items-center rounded-full bg-coral/10 border border-coral/20 text-cream/85 text-[11px] font-semibold">
               {authUser.name}
             </div>
             <button
               onClick={handleLogout}
-              className="h-[42px] px-3 rounded-full border border-coral/20 bg-transparent text-cream/65 cursor-pointer font-serif text-sm hover:text-cream hover:border-coral/40 transition-colors"
+              className="h-8 px-2.5 rounded-full border border-coral/20 bg-transparent text-cream/65 cursor-pointer text-[11px] font-semibold hover:text-cream hover:border-coral/40 transition-colors"
             >
               {t.logout}
             </button>
@@ -35,7 +35,7 @@ const AuthBar = memo(function AuthBar() {
         ) : (
           <button
             onClick={() => setShowLoginModal(true)}
-            className="px-5 py-2.5 rounded-full bg-dark/80 backdrop-blur-xl border border-coral/20 text-cream/85 text-sm font-semibold cursor-pointer hover:bg-dark hover:border-coral/40 transition-all"
+            className="px-3 py-1.5 rounded-full bg-dark/80 backdrop-blur-xl border border-coral/20 text-cream/85 text-[11px] font-semibold cursor-pointer hover:bg-dark hover:border-coral/40 transition-all"
           >
             {t.login}
           </button>
