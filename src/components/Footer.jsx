@@ -19,11 +19,13 @@ const Footer = memo(function Footer() {
           {/* Company Info */}
           <div>
             <h3 className="text-xl font-display text-coral mb-4">{t.companyName}</h3>
-            <p className="my-1 text-sm text-cream/60">
-              {t.ceo} | {t.phone}
-            </p>
-            <p className="my-1 text-sm text-cream/60">{t.businessNumber}</p>
-            <p className="my-1 text-sm text-cream/60">{t.address}</p>
+            {(t.ceo || t.phone) && (
+              <p className="my-1 text-sm text-cream/60">
+                {[t.ceo, t.phone].filter(Boolean).join(' | ')}
+              </p>
+            )}
+            {t.businessNumber && <p className="my-1 text-sm text-cream/60">{t.businessNumber}</p>}
+            {t.address && <p className="my-1 text-sm text-cream/60">{t.address}</p>}
           </div>
 
           {/* Links */}

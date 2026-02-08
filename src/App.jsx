@@ -243,8 +243,11 @@ function AppContent() {
 
       {/* Hero Screen - 비로그인 또는 등록된 사람이 없을 때 */}
       {!showDashboard && stage === 'hero' && !isModalOpen && (
-        <div className="min-h-screen flex items-center justify-center animate-fadeIn py-10">
-          <LandingHero onStart={handleStartJourney} />
+        <div className="min-h-screen flex flex-col animate-fadeIn">
+          <div className="flex-1 flex items-center justify-center py-10">
+            <LandingHero onStart={handleStartJourney} />
+          </div>
+          <Footer />
         </div>
       )}
 
