@@ -8,17 +8,87 @@ import PeopleManager from './components/PeopleManager';
 import PersonForm from './components/PersonForm';
 import Footer from './components/Footer';
 import SampleConversation from './components/SampleConversation';
+import PaymentPopup from './components/PaymentPopup';
+import NameInputPopup from './components/NameInputPopup';
 
 function AppContent() {
   const {
     showChat,
+    setShowChat,
     showPersonForm,
+    setShowPersonForm,
     showPeopleManager,
+    setShowPeopleManager,
+    showPaymentPopup,
+    setShowPaymentPopup,
+    showLoginRequired,
+    setShowLoginRequired,
     showForm,
     setShowForm,
+    authUser,
+    authLoading,
+    additionalPeople,
+    handleStartChatWithPerson,
+    handleAddNewPerson,
+    handleBackFromChat,
+    t,
   } = useApp();
 
   const [stage, setStage] = useState('hero'); // hero -> conversation -> form
+
+  // 브라우저 뒤로가기 처리
+  useEffect(() => {
+    const handlePopState = (e) => {
+      // 모달이 열려있으면 모달 닫기
+      if (showPaymentPopup) {
+        setShowPaymentPopup(false);
+        e.preventDefault();
+        return;
+      }
+      if (showLoginRequired) {
+        setShowLoginRequired(false);
+        e.preventDefault();
+        return;
+      }
+      if (showPersonForm) {
+        setShowPersonForm(false);
+        e.preventDefault();
+        return;
+      }
+      if (showPeopleManager) {
+        setShowPeopleManager(false);
+        e.preventDefault();
+        return;
+      }
+      if (showChat) {
+        handleBackFromChat();
+        e.preventDefault();
+        return;
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [showChat, showPersonForm, showPeopleManager, showPaymentPopup, showLoginRequired, setShowChat, setShowPersonForm, setShowPeopleManager, setShowPaymentPopup, setShowLoginRequired, handleBackFromChat]);
+
+  // 모달 열릴 때 히스토리 푸시 (각 모달별로 한 번만)
+  useEffect(() => {
+    if (showChat) {
+      window.history.pushState({ modal: 'chat' }, '');
+    }
+  }, [showChat]);
+
+  useEffect(() => {
+    if (showPaymentPopup) {
+      window.history.pushState({ modal: 'payment' }, '');
+    }
+  }, [showPaymentPopup]);
+
+  useEffect(() => {
+    if (showPersonForm) {
+      window.history.pushState({ modal: 'personForm' }, '');
+    }
+  }, [showPersonForm]);
 
   const handleStartJourney = () => {
     setStage('conversation');
@@ -33,37 +103,146 @@ function AppContent() {
 
   const isModalOpen = showChat || showPersonForm || showPeopleManager;
 
+  // 로그인 + 등록된 사람이 있으면 대시보드 표시
+  const showDashboard = authUser && additionalPeople.length > 0;
+
+  // 로그인했지만 등록된 사람이 없으면 바로 폼으로 (히어로/샘플대화 스킵)
+  const isLoggedInWithoutPeople = authUser && additionalPeople.length === 0;
+
+  useEffect(() => {
+    if (isLoggedInWithoutPeople && stage === 'hero') {
+      setShowForm(true);
+      setStage('form');
+    }
+  }, [isLoggedInWithoutPeople, stage, setShowForm]);
+
+  // 로그아웃 시 첫 화면으로
+  useEffect(() => {
+    if (!authUser && !authLoading) {
+      setStage('hero');
+      setShowForm(false);
+    }
+  }, [authUser, authLoading, setShowForm]);
+
+  // 로그인 상태 확인 중 로딩 화면
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-dark flex items-center justify-center">
+        <div className="text-center">
+          <h1
+            className="text-4xl font-display font-black bg-gradient-to-br from-white via-coral to-gold bg-clip-text mb-4"
+            style={{ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
+          >
+            DearX
+          </h1>
+          <div className="flex gap-1 justify-center">
+            <div className="w-2 h-2 bg-coral rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+            <div className="w-2 h-2 bg-coral rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+            <div className="w-2 h-2 bg-coral rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-dark text-cream font-serif overflow-hidden">
-      {/* Auth Bar */}
-      {stage === 'hero' && !isModalOpen && <AuthBar />}
+      {/* Auth Bar - 항상 표시 (채팅 제외) */}
+      {!showChat && <AuthBar />}
 
       {/* Language Selector */}
-      {stage === 'hero' && !isModalOpen && <LanguageSelector />}
+      {(showDashboard || stage === 'hero') && !isModalOpen && <LanguageSelector />}
 
-      {/* Hero Screen */}
-      {stage === 'hero' && !isModalOpen && (
+      {/* Dashboard - 로그인 + 등록된 사람이 있을 때 */}
+      {showDashboard && !isModalOpen && (
+        <div className="min-h-screen p-6 pt-20 animate-fadeIn">
+          <div className="max-w-md mx-auto">
+            <h1 className="text-2xl font-display font-bold text-coral mb-2">
+              {(t.dashboardGreeting || 'Hello, {{name}}').replace('{{name}}', authUser.name)}
+            </h1>
+            <p className="text-cream/60 text-sm mb-8">
+              {t.dashboardSubtitle}
+            </p>
+
+            {/* 대화 상대 목록 */}
+            <div className="space-y-3 mb-6">
+              {additionalPeople.map((person, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleStartChatWithPerson(person)}
+                  className="w-full p-4 bg-dark-card border border-coral/20 rounded-2xl flex items-center gap-4 hover:border-coral/40 transition-all group"
+                >
+                  <div
+                    className="w-14 h-14 rounded-full border-2 border-coral/30 flex-shrink-0"
+                    style={{
+                      background: person.photo
+                        ? `url(${person.photo}) center/cover`
+                        : 'linear-gradient(135deg, rgba(255, 140, 105, 0.3) 0%, rgba(255, 193, 122, 0.3) 100%)',
+                    }}
+                  />
+                  <div className="flex-1 text-left">
+                    <p className="text-coral font-medium text-lg">{person.name}</p>
+                    <p className="text-cream/50 text-sm">
+                      {person.relationship} · {person.targetAge}{t.ageUnit}
+                    </p>
+                  </div>
+                  <span className="text-coral/50 group-hover:text-coral transition-colors">→</span>
+                </button>
+              ))}
+            </div>
+
+            {/* 새 사람 추가 버튼 */}
+            <button
+              onClick={handleAddNewPerson}
+              className="w-full p-4 border border-dashed border-coral/30 rounded-2xl text-coral/70 hover:border-coral/50 hover:text-coral transition-all flex items-center justify-center gap-2"
+            >
+              <span className="text-xl">+</span>
+              {t.addNewPerson}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Hero Screen - 비로그인 또는 등록된 사람이 없을 때 */}
+      {!showDashboard && stage === 'hero' && !isModalOpen && (
         <div className="h-screen flex items-center justify-center animate-fadeIn">
           <LandingHero onStart={handleStartJourney} />
         </div>
       )}
 
       {/* Conversation Animation Screen */}
-      {stage === 'conversation' && !isModalOpen && (
-        <div className="h-screen flex items-center justify-center p-4 animate-fadeIn">
-          <SampleConversation onComplete={() => setShowForm(true)} />
+      {!showDashboard && stage === 'conversation' && !isModalOpen && (
+        <div className="h-screen flex flex-col animate-fadeIn">
+          {/* 뒤로가기 버튼 */}
+          <div className="p-4">
+            <button
+              onClick={() => setStage('hero')}
+              className="text-cream/50 hover:text-cream transition-colors flex items-center gap-1 text-sm"
+            >
+              ← {t.back}
+            </button>
+          </div>
+          <div className="flex-1 flex items-center justify-center p-4">
+            <SampleConversation onComplete={() => setShowForm(true)} />
+          </div>
         </div>
       )}
 
       {/* Form Screen */}
-      {stage === 'form' && !isModalOpen && (
+      {!showDashboard && stage === 'form' && !isModalOpen && (
         <div className="min-h-screen animate-fadeIn">
-          <PersonForm isInitialForm={true} />
+          <PersonForm
+            isInitialForm={true}
+            onBackToStart={() => {
+              setShowForm(false);
+              setStage('hero');
+            }}
+          />
         </div>
       )}
 
       {/* Footer */}
-      {stage === 'form' && !isModalOpen && <Footer />}
+      {!showDashboard && stage === 'form' && !isModalOpen && <Footer />}
 
       {/* Chat Interface Modal */}
       {showChat && <ChatInterface />}
@@ -73,6 +252,12 @@ function AppContent() {
 
       {/* Person Form Modal */}
       <PersonForm />
+
+      {/* Payment Popup - 최상위에서 렌더링 */}
+      <PaymentPopup />
+
+      {/* Name Input Popup - 첫 로그인 시 이름 입력 */}
+      <NameInputPopup />
 
       <style>{`
         @keyframes fadeIn {

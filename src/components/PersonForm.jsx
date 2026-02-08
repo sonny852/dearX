@@ -2,7 +2,7 @@ import React, { memo, useCallback, useState, useEffect, useRef } from 'react';
 import { Send, Upload, X, ChevronRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
-const PersonForm = memo(function PersonForm({ isInitialForm = false }) {
+const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToStart }) {
   const {
     showPersonForm,
     setShowPersonForm,
@@ -133,6 +133,23 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false }) {
     }, 200);
   }, []);
 
+  const goToPrevStep = useCallback(() => {
+    if (currentStep > 0) {
+      setIsAnimating(true);
+      setTimeout(() => {
+        setCurrentStep(prev => prev - 1);
+        // 이전 단계의 값을 inputValue에 복원
+        const prevStepKey = steps[currentStep - 1]?.key;
+        if (prevStepKey && currentPersonForm[prevStepKey]) {
+          setInputValue(String(currentPersonForm[prevStepKey]));
+        } else {
+          setInputValue('');
+        }
+        setIsAnimating(false);
+      }, 200);
+    }
+  }, [currentStep, currentPersonForm]);
+
   const handleTextSubmit = useCallback(() => {
     if (!inputValue.trim() && !steps[currentStep]?.optional) return;
 
@@ -191,47 +208,65 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false }) {
   const showProgressBar = !isInitialForm || currentStep > 0;
 
   return (
-    <div
-      className={`${isInitialForm ? 'min-h-screen pb-24' : 'fixed inset-0 z-[200]'} flex flex-col bg-dark relative overflow-hidden`}
-      style={isInitialForm ? {
-        animation: 'formFadeIn 0.8s ease-out',
-        animationFillMode: 'both'
-      } : {}}
-    >
-      {/* 배경 장식 */}
-      {isInitialForm && (
-        <>
-          <div className="absolute top-20 left-10 w-32 h-32 bg-coral/5 rounded-full blur-3xl" />
-          <div className="absolute top-40 right-5 w-24 h-24 bg-gold/5 rounded-full blur-2xl" />
-          <div className="absolute bottom-40 left-1/4 w-40 h-40 bg-coral/3 rounded-full blur-3xl" />
-          <div className="absolute top-1/3 right-1/4 w-20 h-20 bg-gold/5 rounded-full blur-2xl" />
-        </>
+    <>
+      {/* Header - 상단 고정, AuthBar와 같은 라인 (컨테이너 밖에 위치) */}
+      {showProgressBar && (
+        <div className="fixed top-4 left-4 right-4 flex items-center justify-between z-[1999]">
+          {/* 첫 화면으로 돌아가기 버튼 */}
+          {onBackToStart ? (
+            <button
+              onClick={onBackToStart}
+              className="px-3 py-1.5 rounded-full bg-dark/80 backdrop-blur-xl border border-coral/20 text-cream/85 text-[11px] font-semibold cursor-pointer hover:bg-dark hover:border-coral/40 transition-all flex items-center gap-1"
+            >
+              ← {t.back}
+            </button>
+          ) : !isInitialForm ? (
+            <button
+              onClick={() => setShowPersonForm(false)}
+              className="px-3 py-1.5 rounded-full bg-dark/80 backdrop-blur-xl border border-coral/20 text-cream/85 text-[11px] font-semibold cursor-pointer hover:bg-dark hover:border-coral/40 transition-all flex items-center gap-1"
+            >
+              <X size={14} /> {t.close}
+            </button>
+          ) : (
+            <div className="w-16" />
+          )}
+
+          {/* Progress dots - 중앙 */}
+          <div className="flex gap-1.5 bg-dark/80 backdrop-blur-xl px-3 py-2 rounded-full border border-coral/20">
+            {steps.map((_, i) => (
+              <div
+                key={i}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  i < currentStep ? 'w-5 bg-coral' : i === currentStep ? 'w-5 bg-coral/60' : 'w-2 bg-white/20'
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* 오른쪽 빈공간 (로그인 버튼 자리) */}
+          <div className="w-16" />
+        </div>
       )}
 
-      {/* Header - minimal, hidden on first step for initial form */}
-      <div className={`flex-shrink-0 px-5 py-4 flex items-center justify-between transition-opacity duration-500 z-10 ${showProgressBar ? 'opacity-100' : 'opacity-0'}`}>
-        <div className="flex gap-1.5">
-          {steps.map((_, i) => (
-            <div
-              key={i}
-              className={`h-1 rounded-full transition-all duration-300 ${
-                i < currentStep ? 'w-6 bg-coral' : i === currentStep ? 'w-6 bg-coral/60' : 'w-3 bg-white/10'
-              }`}
-            />
-          ))}
-        </div>
-        {!isInitialForm && (
-          <button
-            onClick={() => setShowPersonForm(false)}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-cream/40 hover:text-cream/60 transition-colors"
-          >
-            <X size={20} />
-          </button>
+      <div
+        className={`${isInitialForm ? 'min-h-screen pb-24' : 'fixed inset-0 z-[200]'} flex flex-col bg-dark relative overflow-hidden`}
+        style={isInitialForm ? {
+          animation: 'formFadeIn 0.8s ease-out',
+          animationFillMode: 'both'
+        } : {}}
+      >
+        {/* 배경 장식 */}
+        {isInitialForm && (
+          <>
+            <div className="absolute top-20 left-10 w-32 h-32 bg-coral/5 rounded-full blur-3xl" />
+            <div className="absolute top-40 right-5 w-24 h-24 bg-gold/5 rounded-full blur-2xl" />
+            <div className="absolute bottom-40 left-1/4 w-40 h-40 bg-coral/3 rounded-full blur-3xl" />
+            <div className="absolute top-1/3 right-1/4 w-20 h-20 bg-gold/5 rounded-full blur-2xl" />
+          </>
         )}
-      </div>
 
       {/* Main content - centered vertically */}
-      <div className="flex-1 flex flex-col justify-center items-center px-5 z-10">
+      <div className="flex-1 flex flex-col justify-center items-center px-5 z-10 pt-16">
         {!isComplete && (
           <div
             className={`w-full max-w-md transition-all duration-200 ${isAnimating ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
@@ -256,6 +291,19 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false }) {
                   />
                 </div>
                 <div className="flex justify-between items-center pt-2">
+                  {/* 이전 단계 버튼 */}
+                  {currentStep > 0 ? (
+                    <button
+                      onClick={goToPrevStep}
+                      className="w-12 h-12 rounded-full flex items-center justify-center bg-white/10 text-cream/50 hover:text-cream hover:bg-white/20 transition-all"
+                    >
+                      ←
+                    </button>
+                  ) : (
+                    <div className="w-12" />
+                  )}
+
+                  {/* 건너뛰기 - 가운데 */}
                   {currentStepData.optional ? (
                     <button
                       onClick={handleSkip}
@@ -266,6 +314,7 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false }) {
                   ) : (
                     <div />
                   )}
+
                   <button
                     id="send-button"
                     onClick={handleTextSubmit}
@@ -283,17 +332,33 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false }) {
             )}
 
             {currentStepData?.type === 'choice' && (
-              <div className="flex flex-col gap-3">
-                {currentStepData.choices.map((choice) => (
-                  <button
-                    key={choice.value}
-                    onClick={() => handleChoiceSelect(choice.value)}
-                    className="w-full py-4 px-5 bg-white/5 hover:bg-coral/10 border border-white/10 hover:border-coral/30 rounded-2xl text-cream text-lg text-left transition-all flex items-center gap-3"
-                  >
-                    {choice.emoji && <span className="text-2xl">{choice.emoji}</span>}
-                    {choice.label}
-                  </button>
-                ))}
+              <div className="space-y-3">
+                <div className="flex flex-col gap-3">
+                  {currentStepData.choices.map((choice) => (
+                    <button
+                      key={choice.value}
+                      onClick={() => handleChoiceSelect(choice.value)}
+                      className="w-full py-4 px-5 bg-white/5 hover:bg-coral/10 border border-white/10 hover:border-coral/30 rounded-2xl text-cream text-lg text-left transition-all flex items-center gap-3"
+                    >
+                      {choice.emoji && <span className="text-2xl">{choice.emoji}</span>}
+                      {choice.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex justify-between items-center pt-2">
+                  {currentStep > 0 ? (
+                    <button
+                      onClick={goToPrevStep}
+                      className="w-12 h-12 rounded-full flex items-center justify-center bg-white/10 text-cream/50 hover:text-cream hover:bg-white/20 transition-all"
+                    >
+                      ←
+                    </button>
+                  ) : (
+                    <div className="w-12" />
+                  )}
+                  <div />
+                  <div className="w-12" />
+                </div>
               </div>
             )}
 
@@ -313,12 +378,25 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false }) {
                   <Upload size={20} />
                   <span>사진 선택하기</span>
                 </label>
-                <button
-                  onClick={handleSkip}
-                  className="w-full py-3 text-cream/40 text-sm hover:text-cream/60 transition-colors"
-                >
-                  나중에 할게요
-                </button>
+                <div className="flex justify-between items-center pt-2">
+                  {currentStep > 0 ? (
+                    <button
+                      onClick={goToPrevStep}
+                      className="w-12 h-12 rounded-full flex items-center justify-center bg-white/10 text-cream/50 hover:text-cream hover:bg-white/20 transition-all"
+                    >
+                      ←
+                    </button>
+                  ) : (
+                    <div className="w-12" />
+                  )}
+                  <button
+                    onClick={handleSkip}
+                    className="py-3 text-cream/40 text-sm hover:text-cream/60 transition-colors"
+                  >
+                    나중에 할게요
+                  </button>
+                  <div className="w-12" />
+                </div>
               </div>
             )}
           </div>
@@ -341,19 +419,20 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false }) {
         )}
       </div>
 
-      <style>{`
-        @keyframes formFadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
+        <style>{`
+          @keyframes formFadeIn {
+            from {
+              opacity: 0;
+              transform: translateY(20px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
           }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
-    </div>
+        `}</style>
+      </div>
+    </>
   );
 });
 

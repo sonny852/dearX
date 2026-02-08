@@ -50,8 +50,8 @@ const PaymentPopup = memo(function PaymentPopup() {
   };
 
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="relative w-full max-w-[500px] bg-dark-card backdrop-blur-2xl rounded-3xl border border-coral/20 overflow-hidden">
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto">
+      <div className="relative w-full max-w-[500px] max-h-[90vh] bg-dark-card backdrop-blur-2xl rounded-3xl border border-coral/20 overflow-hidden flex flex-col my-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-coral/20">
           <h2 className="text-xl font-display font-bold text-coral m-0">
@@ -66,7 +66,7 @@ const PaymentPopup = memo(function PaymentPopup() {
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto flex-1">
           {/* Message about free limit */}
           <div className="text-center mb-6">
             <p className="text-cream/70 text-sm">
