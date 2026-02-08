@@ -591,6 +591,7 @@ export function AppProvider({ children }) {
             content: m.content,
           })),
           userName: authUser?.name || 'User',
+          language: language, // ko, en, ja
         };
 
         const anonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;

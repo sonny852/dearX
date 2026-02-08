@@ -216,7 +216,14 @@ function getCallName(relationship: string): string {
   return callNames[relationship] || '너';
 }
 
-function buildSystemPrompt(person: Person, userName: string): string {
+function buildSystemPrompt(person: Person, userName: string, language: string = 'ko'): string {
+  // 언어별 응답 지시
+  const languageInstruction = {
+    ko: '',
+    en: '\n\n## LANGUAGE RULE (CRITICAL!)\nYou MUST respond ONLY in English. Never use Korean or Japanese.',
+    ja: '\n\n## 言語ルール（最重要！）\n必ず日本語のみで返答してください。韓国語や英語は使わないでください。',
+  }[language] || '';
+
   const timeContext = person.timeDirection === 'past'
     ? `과거의 ${person.targetAge}세 시절`
     : `미래의 ${person.targetAge}세 모습`;
@@ -334,7 +341,7 @@ ${selfContext}
 예시: "응!", "뭐?", "진짜?", "몰라~", "그게 뭐야?"
 `;
 
-  return prompt;
+  return prompt + languageInstruction;
 }
 
 serve(async (req) => {
@@ -353,14 +360,13 @@ serve(async (req) => {
       throw new Error('ANTHROPIC_API_KEY not configured (DearX-API-KEY secret missing)');
     }
 
-    const { person, messages, userName } = await req.json();
-    console.log('Request received:', { personName: person?.name, messageCount: messages?.length, userName });
+    const { person, messages, userName, language = 'ko' } = await req.json();
 
     if (!person || !messages || !userName) {
       throw new Error('Missing required fields: person, messages, userName');
     }
 
-    const systemPrompt = buildSystemPrompt(person, userName);
+    const systemPrompt = buildSystemPrompt(person, userName, language);
 
     // 마지막 사용자 메시지 확인
     const lastUserMessage = messages[messages.length - 1]?.content || '';
