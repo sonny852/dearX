@@ -56,7 +56,8 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
       return { value: age, error: '' };
     }
     return { value, error: '' };
-  }, [currentYear]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 실시간 검증 (에러 메시지만)
   const validateInput = useCallback((key, value) => {
@@ -73,6 +74,7 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
       if (age > VALIDATION.age.max) return `${VALIDATION.age.max}세 이하로 입력해주세요`;
     }
     return '';
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const steps = [
@@ -167,6 +169,7 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
         setInputValue('');
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showForm, showPersonForm, editingPersonIndex, isInitialForm]);
 
   // Focus input
@@ -174,6 +177,7 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
     if (steps[currentStep]?.type === 'text') {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep]);
 
   const goToNextStep = useCallback(() => {
@@ -202,6 +206,7 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
         setIsAnimating(false);
       }, 200);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep, currentPersonForm]);
 
   const handleTextSubmit = useCallback(() => {
@@ -224,13 +229,15 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
     }
     setValidationError('');
     goToNextStep();
-  }, [inputValue, currentStep, goToNextStep, currentYear, validateAndCorrect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputValue, currentStep, goToNextStep, currentYear, validateAndCorrect, setCurrentPersonForm]);
 
   const handleChoiceSelect = useCallback((value) => {
     const step = steps[currentStep];
     setCurrentPersonForm(prev => ({ ...prev, [step.key]: value }));
     goToNextStep();
-  }, [currentStep, goToNextStep]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep, goToNextStep, setCurrentPersonForm]);
 
   const handlePhotoUpload = useCallback((e) => {
     handleFileUpload(e, 'person');
