@@ -1,35 +1,28 @@
 import React, { memo } from 'react';
-import { ChevronDown } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
-const LandingHero = memo(function LandingHero() {
-  const { scrollProgress, t } = useApp();
+const LandingHero = memo(function LandingHero({ onStart }) {
+  const { t } = useApp();
 
   return (
-    <div className="h-screen flex flex-col justify-center items-center sticky top-0 z-[1]">
+    <div className="flex flex-col justify-center items-center pb-20">
       {/* Background gradient */}
       <div
-        className="absolute inset-0 transition-opacity duration-300"
+        className="absolute inset-0"
         style={{
-          background: `radial-gradient(circle at ${50 + scrollProgress * 20}% ${50 - scrollProgress * 20}%, rgba(255, 140, 105, 0.15) 0%, transparent 50%)`,
-          opacity: 1 - scrollProgress * 0.7,
+          background: 'radial-gradient(circle at 50% 50%, rgba(255, 140, 105, 0.15) 0%, transparent 50%)',
         }}
       />
 
       {/* Main content */}
-      <div
-        className="text-center z-[2] transition-all duration-300 flex flex-col items-center"
-        style={{
-          transform: `translateY(${scrollProgress * -100}px)`,
-          opacity: 1 - scrollProgress * 1.5,
-        }}
-      >
+      <div className="text-center z-[2] flex flex-col items-center">
         {/* Hero Image with vignette blend */}
         <div
           className="fade-in-up mb-4"
           style={{ animationDelay: '0s', opacity: 0 }}
         >
           <img
+            id="dearx-logo"
             src="/main.png"
             alt=""
             className="w-[220px] sm:w-[260px] md:w-[300px]"
@@ -57,19 +50,50 @@ const LandingHero = memo(function LandingHero() {
         >
           {t.mainSubtitle}
         </p>
-        <p
-          className="fade-in-up text-[clamp(0.9rem,1.5vw,1.1rem)] font-light mt-3 text-coral/60"
-          style={{ animationDelay: '0.9s', opacity: 0 }}
-        >
-          {t.worryMessage}
-        </p>
 
-        {/* Scroll indicator */}
-        <div className="scroll-indicator mt-12 opacity-50 flex flex-col items-center gap-2">
-          <span className="text-sm text-cream/60">{t.scrollHint}</span>
-          <ChevronDown size={32} className="text-cream" />
+        {/* 클릭 버튼 */}
+        <div
+          className="fade-in-up mt-8"
+          style={{ animationDelay: '1s', opacity: 0 }}
+        >
+          <button
+            onClick={onStart}
+            className="group relative px-7 py-3.5 rounded-full bg-transparent border border-coral/40 text-coral font-medium text-base cursor-pointer hover:border-coral/80 hover:bg-coral/5 active:scale-95 transition-all flex items-center gap-2 btn-glow"
+          >
+            <span className="relative z-10">{t.worryMessage}</span>
+            <span className="relative z-10 arrow-slide text-lg transition-transform group-hover:translate-x-1">→</span>
+          </button>
         </div>
       </div>
+
+      <style>{`
+        .fade-in-up {
+          animation: fadeInUp 0.8s ease-out forwards;
+        }
+        .btn-glow {
+          animation: btnGlow 3s ease-in-out infinite;
+        }
+        .arrow-slide {
+          display: inline-block;
+          animation: arrowSlide 1.5s ease-in-out infinite;
+        }
+        @keyframes btnGlow {
+          0%, 100% {
+            box-shadow: 0 0 20px rgba(255, 140, 105, 0.15);
+          }
+          50% {
+            box-shadow: 0 0 30px rgba(255, 140, 105, 0.3);
+          }
+        }
+        @keyframes arrowSlide {
+          0%, 100% { transform: translateX(0); opacity: 1; }
+          50% { transform: translateX(4px); opacity: 0.7; }
+        }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 });
