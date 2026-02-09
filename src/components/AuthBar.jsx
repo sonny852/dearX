@@ -76,20 +76,6 @@ const AuthBar = memo(function AuthBar() {
 
             {/* Login Buttons */}
             <div className="flex flex-col gap-3">
-              {/* Kakao */}
-              <button
-                onClick={() => { handleLogin('kakao'); setShowLoginModal(false); }}
-                disabled={authLoading}
-                className="w-full h-[54px] rounded-2xl bg-[#FEE500] text-[#191919] text-[15px] font-semibold flex items-center justify-center gap-3 cursor-pointer border-none hover:brightness-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <img
-                  alt=""
-                  src="https://upload.wikimedia.org/wikipedia/commons/e/e3/KakaoTalk_logo.svg"
-                  className="w-5 h-5"
-                />
-                {t.continueWithKakao}
-              </button>
-
               {/* Google */}
               <button
                 onClick={() => { handleLogin('google'); setShowLoginModal(false); }}
@@ -102,6 +88,28 @@ const AuthBar = memo(function AuthBar() {
                   className="w-5 h-5"
                 />
                 {t.continueWithGoogle}
+              </button>
+
+              {/* Kakao - 연동 예정 */}
+              <button
+                onClick={() => alert(t.comingSoonMessage || '연동 예정입니다')}
+                className="w-full h-[54px] rounded-2xl bg-[#FEE500] text-[#191919] text-[15px] font-semibold flex items-center justify-center gap-3 cursor-pointer border-none hover:brightness-95 transition-all"
+              >
+                <img
+                  alt=""
+                  src="https://upload.wikimedia.org/wikipedia/commons/e/e3/KakaoTalk_logo.svg"
+                  className="w-5 h-5"
+                />
+                {t.continueWithKakao}
+              </button>
+
+              {/* Naver - 연동 예정 */}
+              <button
+                onClick={() => alert(t.comingSoonMessage || '연동 예정입니다')}
+                className="w-full h-[54px] rounded-2xl bg-[#03C75A] text-white text-[15px] font-semibold flex items-center justify-center gap-3 cursor-pointer border-none hover:brightness-95 transition-all"
+              >
+                <span className="w-5 h-5 flex items-center justify-center text-white font-bold text-sm">N</span>
+                {t.continueWithNaver || '네이버로 계속하기'}
               </button>
             </div>
           </div>
