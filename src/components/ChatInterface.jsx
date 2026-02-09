@@ -1,5 +1,7 @@
-import React, { memo, useRef, useEffect } from 'react';
-import { Send, Clock, X, Home } from 'lucide-react';
+import React, { memo, useRef, useEffect, useState, useCallback } from 'react';
+import { Send, Clock, X, Home, Share2, Download, Camera } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+import html2canvas from 'html2canvas';
 import { useApp } from '../context/AppContext';
 
 const ChatInterface = memo(function ChatInterface() {
@@ -21,6 +23,12 @@ const ChatInterface = memo(function ChatInterface() {
     t,
   } = useApp();
 
+  const [showCaptureModal, setShowCaptureModal] = useState(false);
+  const [capturedImage, setCapturedImage] = useState(null);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const captureRef = useRef(null);
+  const messagesEndRef = useRef(null);
+
   const handleGoHome = () => {
     handleBackFromChat();
     setShowForm(false);
@@ -28,11 +36,71 @@ const ChatInterface = memo(function ChatInterface() {
 
   const remainingFreeMessages = FREE_MESSAGE_LIMIT - messageCount;
 
-  const messagesEndRef = useRef(null);
-
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // 캡처 기능
+  const handleCapture = useCallback(async () => {
+    if (!captureRef.current || messages.length === 0) return;
+
+    setIsCapturing(true);
+    setShowCaptureModal(true);
+
+    try {
+      // 약간의 딜레이 후 캡처 (렌더링 대기)
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const canvas = await html2canvas(captureRef.current, {
+        backgroundColor: '#1a1a2e',
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+      });
+
+      setCapturedImage(canvas.toDataURL('image/png'));
+    } catch (error) {
+      console.error('Capture failed:', error);
+    } finally {
+      setIsCapturing(false);
+    }
+  }, [messages.length]);
+
+  // 이미지 다운로드
+  const handleDownload = useCallback(() => {
+    if (!capturedImage) return;
+
+    const link = document.createElement('a');
+    link.download = `dearx-chat-${activePerson?.name || 'conversation'}-${Date.now()}.png`;
+    link.href = capturedImage;
+    link.click();
+  }, [capturedImage, activePerson?.name]);
+
+  // 공유 기능
+  const handleShare = useCallback(async () => {
+    if (!capturedImage) return;
+
+    try {
+      // Convert base64 to blob
+      const response = await fetch(capturedImage);
+      const blob = await response.blob();
+      const file = new File([blob], 'dearx-chat.png', { type: 'image/png' });
+
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: 'DearX - 그리움을 만나다',
+          text: '소중한 대화를 공유합니다',
+          files: [file],
+        });
+      } else {
+        // 공유 API 지원 안 하면 다운로드
+        handleDownload();
+      }
+    } catch (error) {
+      console.error('Share failed:', error);
+      handleDownload();
+    }
+  }, [capturedImage, handleDownload]);
 
   if (!activePerson) return null;
 
@@ -69,12 +137,24 @@ const ChatInterface = memo(function ChatInterface() {
             </div>
           </div>
 
-          <button
-            onClick={authUser ? handleBackFromChat : handleGoHome}
-            className="px-3 py-2 bg-coral/10 border border-coral/30 rounded-xl text-coral cursor-pointer text-xs hover:bg-coral/20 transition-colors"
-          >
-            {t.back}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* 캡처 버튼 */}
+            {messages.length > 0 && (
+              <button
+                onClick={handleCapture}
+                className="w-10 h-10 rounded-full bg-coral/10 border border-coral/30 flex items-center justify-center text-coral hover:bg-coral/20 transition-colors"
+                title={t.captureChat || '대화 캡처'}
+              >
+                <Camera size={18} />
+              </button>
+            )}
+            <button
+              onClick={authUser ? handleBackFromChat : handleGoHome}
+              className="px-3 py-2 bg-coral/10 border border-coral/30 rounded-xl text-coral cursor-pointer text-xs hover:bg-coral/20 transition-colors"
+            >
+              {t.back}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -249,6 +329,118 @@ const ChatInterface = memo(function ChatInterface() {
                 {t.continueWithGoogle}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Capture Modal */}
+      {showCaptureModal && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-[500px] bg-dark-card rounded-3xl border border-coral/20 overflow-hidden my-4">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-coral/20">
+              <h3 className="text-lg font-display font-bold text-coral">
+                {t.captureChat || '대화 캡처'}
+              </h3>
+              <button
+                onClick={() => { setShowCaptureModal(false); setCapturedImage(null); }}
+                className="w-8 h-8 rounded-full bg-coral/10 flex items-center justify-center text-coral/60 hover:text-coral transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Capture Preview */}
+            <div className="p-4">
+              {isCapturing ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="flex gap-1">
+                    <div className="w-2 h-2 bg-coral rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-2 h-2 bg-coral rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-2 h-2 bg-coral rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              ) : capturedImage ? (
+                <img src={capturedImage} alt="Captured chat" className="w-full rounded-2xl" />
+              ) : null}
+
+              {/* 캡처용 숨겨진 영역 */}
+              <div className="absolute left-[-9999px] top-0">
+                <div ref={captureRef} className="w-[400px] bg-dark p-6">
+                  {/* 대화 헤더 */}
+                  <div className="flex items-center gap-3 mb-6 pb-4 border-b border-coral/20">
+                    <div
+                      className="w-12 h-12 rounded-full border-2 border-coral/30"
+                      style={{
+                        background: (activePerson.currentPhoto || activePerson.photo)
+                          ? `url(${activePerson.currentPhoto || activePerson.photo}) center/cover`
+                          : 'linear-gradient(135deg, rgba(255, 140, 105, 0.3) 0%, rgba(255, 193, 122, 0.3) 100%)',
+                      }}
+                    />
+                    <div>
+                      <p className="text-coral font-bold text-lg">{activePerson.name}</p>
+                      <p className="text-cream/50 text-sm">
+                        {activePerson.targetAge}{t.ageUnit} · {activePerson.timeDirection === 'past' ? t.past : t.future}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 메시지들 */}
+                  <div className="space-y-4 mb-6">
+                    {messages.slice(-6).map((msg, i) => (
+                      <div
+                        key={i}
+                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div
+                          className={`max-w-[80%] px-4 py-3 text-sm ${
+                            msg.role === 'user'
+                              ? 'rounded-2xl rounded-br-sm bg-gradient-to-br from-coral to-coral-dark text-white'
+                              : 'rounded-2xl rounded-bl-sm bg-white/10 text-cream border border-coral/20'
+                          }`}
+                        >
+                          {msg.content}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* 브랜딩 푸터 */}
+                  <div className="pt-4 border-t border-coral/20 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <img src="/favicon.png" alt="DearX" className="w-8 h-8" />
+                      <div>
+                        <p className="text-coral font-display font-bold text-sm">그리움을 만나다</p>
+                        <p className="text-cream/50 text-xs">DearX</p>
+                      </div>
+                    </div>
+                    <div className="bg-white p-1 rounded-lg">
+                      <QRCodeSVG value="https://dearx.io" size={48} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            {capturedImage && (
+              <div className="p-4 border-t border-coral/20 flex gap-3">
+                <button
+                  onClick={handleDownload}
+                  className="flex-1 py-3 bg-coral/20 border border-coral/30 rounded-xl text-coral font-medium flex items-center justify-center gap-2 hover:bg-coral/30 transition-colors"
+                >
+                  <Download size={18} />
+                  {t.download || '저장'}
+                </button>
+                <button
+                  onClick={handleShare}
+                  className="flex-1 py-3 bg-gradient-to-r from-coral to-gold rounded-xl text-white font-medium flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                >
+                  <Share2 size={18} />
+                  {t.share || '공유'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
