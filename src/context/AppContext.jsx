@@ -96,6 +96,7 @@ export function AppProvider({ children }) {
       }
     }, 5000);
     return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const t = useMemo(() => translations[language], [language]);
@@ -608,7 +609,7 @@ export function AppProvider({ children }) {
       }
       setIsTyping(false);
     }, 1500);
-  }, [input, activePerson, messages, authUser, messageCount]);
+  }, [input, activePerson, messages, authUser, messageCount, language]);
 
   const handleBackFromChat = useCallback(() => {
     setShowChat(false);
