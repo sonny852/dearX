@@ -10,9 +10,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
+        flowType: 'pkce',
         persistSession: true,
         storageKey: 'dearx-auth-token',
-        storage: window.localStorage,
         autoRefreshToken: true,
         detectSessionInUrl: true,
       }
@@ -22,24 +22,24 @@ export const supabase = supabaseUrl && supabaseAnonKey
 // Auth helpers
 export const auth = {
   // 카카오 로그인
-  signInWithKakao: async () => {
+  signInWithKakao: () => {
     if (!supabase) return { error: { message: 'Demo mode' } };
     return supabase.auth.signInWithOAuth({
       provider: 'kakao',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: `${window.location.origin}`,
         scopes: 'profile_nickname profile_image',
       },
     });
   },
 
   // 구글 로그인
-  signInWithGoogle: async () => {
+  signInWithGoogle: () => {
     if (!supabase) return { error: { message: 'Demo mode' } };
     return supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: `${window.location.origin}`,
       },
     });
   },

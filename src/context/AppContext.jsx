@@ -204,11 +204,10 @@ export function AppProvider({ children }) {
   }, []);
 
   // 로그인 핸들러
-  const handleLogin = useCallback(async (provider) => {
-    setAuthLoading(true);
-
+  const handleLogin = useCallback((provider) => {
     if (!supabase) {
       // Demo mode
+      setAuthLoading(true);
       setTimeout(() => {
         setAuthUser({ id: `demo-${provider}`, name: 'User', isPremium: false });
         setAuthLoading(false);
@@ -216,15 +215,14 @@ export function AppProvider({ children }) {
       return;
     }
 
-    try {
-      if (provider === 'kakao') {
-        await auth.signInWithKakao();
-      } else if (provider === 'google') {
-        await auth.signInWithGoogle();
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      setAuthLoading(false);
+    // OAuth 리디렉트 전에 setAuthLoading(true)을 호출하지 않음
+    // - 모바일 Safari에서 state update → re-render가 먼저 실행되면
+    //   브라우저가 user gesture context를 잃어 네비게이션이 차단됨
+    // - 페이지가 리디렉트되면 어차피 새로 로드되므로 loading 상태 불필요
+    if (provider === 'kakao') {
+      auth.signInWithKakao();
+    } else if (provider === 'google') {
+      auth.signInWithGoogle();
     }
   }, []);
 
