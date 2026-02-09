@@ -88,171 +88,110 @@ export function AppProvider({ children }) {
   const [showNameInput, setShowNameInput] = useState(false);
   const [pendingAuthUser, setPendingAuthUser] = useState(null); // 이름 입력 대기 중인 유저
 
-  // 로딩 타임아웃 (3초 후 강제로 로딩 종료)
+  // 로딩 타임아웃 (5초 후 강제로 로딩 종료 - fallback)
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (authLoading) {
         setAuthLoading(false);
       }
-    }, 3000);
+    }, 5000);
     return () => clearTimeout(timeout);
-  }, [authLoading]);
+  }, []);
 
   const t = useMemo(() => translations[language], [language]);
 
-  // Supabase 인증 상태 감지
+  // Supabase 인증 상태 감지 (onAuthStateChange만 사용)
   useEffect(() => {
-    // 초기 세션 확인
-    const initAuth = async () => {
-      try {
-        if (!supabase) {
-          setAuthLoading(false);
-          return;
-        }
-
-        // 타임아웃 적용한 getUser
-        const getUserWithTimeout = () => {
-          return Promise.race([
-            auth.getUser(),
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('getUser timeout')), 5000)
-            )
-          ]);
-        };
-
-        let user = null;
-        try {
-          const result = await getUserWithTimeout();
-          user = result.data?.user;
-        } catch (e) {
-          // Auth error - silent in production
-        }
-        if (user) {
-          const { data: profile } = await db.getOrCreateProfile(user.id);
-          // Google은 full_name, Kakao는 name 사용
-          const oauthName = user.user_metadata?.full_name
-            || user.user_metadata?.name
-            || user.email?.split('@')[0]
-            || 'User';
-
-          // 프로필에 이름이 저장되어 있으면 그대로 사용, 없으면 이름 입력 요청
-          if (profile?.name) {
-            setAuthUser({
-              id: user.id,
-              email: user.email,
-              name: profile.name,
-              isPremium: profile?.is_premium || false,
-              premiumExpiresAt: profile?.premium_expires_at,
-            });
-          } else {
-            // 첫 로그인 - 이름 입력 팝업 표시
-            setPendingAuthUser({
-              id: user.id,
-              email: user.email,
-              oauthName: oauthName,
-              isPremium: profile?.is_premium || false,
-              premiumExpiresAt: profile?.premium_expires_at,
-            });
-            setShowNameInput(true);
-          }
-
-          // 저장된 사람 목록 로드
-          const { data: people } = await db.getPeople(user.id);
-          if (people && people.length > 0) {
-            setAdditionalPeople(people.map(p => ({
-              id: p.id,
-              relationship: p.relationship,
-              name: p.name,
-              photo: p.photo_url,
-              targetAge: p.target_age,
-              gender: p.gender,
-              timeDirection: p.time_direction,
-              personality: p.personality,
-              speechStyle: p.speech_style,
-              hobbies: p.hobbies,
-              memories: p.memories,
-              favoriteWords: p.favorite_words,
-              habits: p.habits,
-            })));
-          }
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
-      } finally {
-        setAuthLoading(false);
-      }
-    };
-
-    initAuth();
-
-    // 인증 상태 변경 감지
     if (!supabase || !auth) {
+      setAuthLoading(false);
       return;
     }
 
     let subscription;
     try {
       const { data } = auth.onAuthStateChange(async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          const { data: profile } = await db.getOrCreateProfile(session.user.id);
+        // INITIAL_SESSION: 페이지 로드 시 세션 복원
+        // SIGNED_IN: 새로 로그인
+        // TOKEN_REFRESHED: 토큰 갱신
+        if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
           // Google은 full_name 또는 name을 사용, Kakao는 name을 사용
           const oauthName = session.user.user_metadata?.full_name
             || session.user.user_metadata?.name
             || session.user.email?.split('@')[0]
             || 'User';
-          const isPremium = profile?.is_premium || false;
 
-          // 프로필에 이름이 저장되어 있으면 그대로 사용, 없으면 이름 입력 요청
-          if (profile?.name) {
-            setAuthUser({
-              id: session.user.id,
-              email: session.user.email,
-              name: profile.name,
-              isPremium: isPremium,
-              premiumExpiresAt: profile?.premium_expires_at,
-            });
+          // 먼저 세션 데이터로 임시 로그인 처리 (빠른 응답)
+          setAuthUser({
+            id: session.user.id,
+            email: session.user.email,
+            name: oauthName,
+            isPremium: false,
+          });
+          setAuthLoading(false);
 
-            // 로그인 전에 결제 대기 중이었으면 결제 팝업 표시
-            const pendingPayment = localStorage.getItem('dearx_pending_payment') === 'true';
-            if (pendingPayment && !isPremium) {
-              localStorage.removeItem('dearx_pending_payment');
-              setPendingPaymentAfterLogin(false);
-              setShowPaymentPopup(true);
+          // 백그라운드에서 프로필 및 사람 목록 로드 (느린 작업)
+          (async () => {
+            try {
+              const { data: profile } = await db.getOrCreateProfile(session.user.id);
+
+              if (profile?.name) {
+                // 프로필 데이터로 업데이트
+                setAuthUser({
+                  id: session.user.id,
+                  email: session.user.email,
+                  name: profile.name,
+                  isPremium: profile?.is_premium || false,
+                  premiumExpiresAt: profile?.premium_expires_at,
+                });
+
+                // 로그인 전에 결제 대기 중이었으면 결제 팝업 표시
+                const pendingPayment = localStorage.getItem('dearx_pending_payment') === 'true';
+                if (pendingPayment && !(profile?.is_premium)) {
+                  localStorage.removeItem('dearx_pending_payment');
+                  setPendingPaymentAfterLogin(false);
+                  setShowPaymentPopup(true);
+                }
+              } else if (!profile) {
+                // 첫 로그인 - 이름 입력 팝업 표시
+                setPendingAuthUser({
+                  id: session.user.id,
+                  email: session.user.email,
+                  oauthName: oauthName,
+                  isPremium: false,
+                });
+                setShowNameInput(true);
+              }
+
+              // 저장된 사람 목록 로드
+              const { data: people } = await db.getPeople(session.user.id);
+              if (people && people.length > 0) {
+                setAdditionalPeople(people.map(p => ({
+                  id: p.id,
+                  relationship: p.relationship,
+                  name: p.name,
+                  photo: p.photo_url,
+                  targetAge: p.target_age,
+                  gender: p.gender,
+                  timeDirection: p.time_direction,
+                  personality: p.personality,
+                  speechStyle: p.speech_style,
+                  hobbies: p.hobbies,
+                  memories: p.memories,
+                  favoriteWords: p.favorite_words,
+                  habits: p.habits,
+                })));
+              }
+            } catch (error) {
+              // 백그라운드 fetch 에러 - 무시 (이미 임시 로그인 완료)
             }
-          } else {
-            // 첫 로그인 - 이름 입력 팝업 표시
-            setPendingAuthUser({
-              id: session.user.id,
-              email: session.user.email,
-              oauthName: oauthName,
-              isPremium: isPremium,
-              premiumExpiresAt: profile?.premium_expires_at,
-            });
-            setShowNameInput(true);
-          }
-
-          // 저장된 사람 목록 로드
-          const { data: people } = await db.getPeople(session.user.id);
-          if (people) {
-            setAdditionalPeople(people.map(p => ({
-              id: p.id,
-              relationship: p.relationship,
-              name: p.name,
-              photo: p.photo_url,
-              targetAge: p.target_age,
-              gender: p.gender,
-              timeDirection: p.time_direction,
-              personality: p.personality,
-              speechStyle: p.speech_style,
-              hobbies: p.hobbies,
-              memories: p.memories,
-              favoriteWords: p.favorite_words,
-              habits: p.habits,
-            })));
-          }
+          })();
         } else if (event === 'SIGNED_OUT') {
           setAuthUser(null);
           setAdditionalPeople([]);
+          setAuthLoading(false);
+        } else if (event === 'INITIAL_SESSION') {
+          // 세션 없이 INITIAL_SESSION이 온 경우 (로그아웃 상태)
+          setAuthLoading(false);
         }
       });
       subscription = data?.subscription;
@@ -606,21 +545,33 @@ export function AppProvider({ children }) {
 
         const data = await response.json();
         if (response.ok) {
-          const newMessage = {
-            role: 'assistant',
-            content: data.message,
-            imageUrl: data.imageUrl || null,
-            timestamp: new Date().toLocaleDateString('ko-KR', {
-              year: 'numeric', month: '2-digit', day: '2-digit'
-            }).replace(/\. /g, '.').replace(/\.$/, ''),
-            mode: activePerson.timeDirection,
-          };
-          setMessages((prev) => [...prev, newMessage]);
-          // AI 응답 DB 저장
+          const timestamp = new Date().toLocaleDateString('ko-KR', {
+            year: 'numeric', month: '2-digit', day: '2-digit'
+          }).replace(/\. /g, '.').replace(/\.$/, '');
+
+          // ||| 구분자로 메시지 분리
+          const messageParts = data.message.split('|||').map(s => s.trim()).filter(s => s);
+
+          // 여러 메시지를 순차적으로 추가
+          for (let i = 0; i < messageParts.length; i++) {
+            const part = messageParts[i];
+            await new Promise(resolve => setTimeout(resolve, i === 0 ? 0 : 500)); // 첫 번째는 바로, 이후는 0.5초 딜레이
+
+            const newMessage = {
+              role: 'assistant',
+              content: part,
+              imageUrl: i === 0 ? (data.imageUrl || null) : null, // 이미지는 첫 메시지에만
+              timestamp,
+              mode: activePerson.timeDirection,
+            };
+            setMessages((prev) => [...prev, newMessage]);
+          }
+
+          // AI 응답 DB 저장 (전체 메시지)
           if (supabase && authUser && activePerson?.id) {
             db.saveMessage(authUser.id, activePerson.id, {
               role: 'assistant',
-              content: data.message,
+              content: data.message.replace(/\|\|\|/g, '\n'), // DB에는 줄바꿈으로 저장
               image_url: data.imageUrl || null,
             });
           }

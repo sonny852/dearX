@@ -8,7 +8,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = supabaseUrl && supabaseAnonKey
-  ? createClient(supabaseUrl, supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        storageKey: 'dearx-auth-token',
+        storage: window.localStorage,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      }
+    })
   : null;
 
 // Auth helpers
@@ -46,6 +54,12 @@ export const auth = {
   getUser: async () => {
     if (!supabase) return { data: { user: null }, error: null };
     return supabase.auth.getUser();
+  },
+
+  // 세션 가져오기 (localStorage에서 바로 복원, 네트워크 요청 없음)
+  getSession: async () => {
+    if (!supabase) return { data: { session: null }, error: null };
+    return supabase.auth.getSession();
   },
 
   // 세션 변경 감지

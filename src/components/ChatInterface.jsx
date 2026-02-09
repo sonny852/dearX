@@ -530,7 +530,7 @@ const ChatInterface = memo(function ChatInterface() {
       {/* 캡처용 숨겨진 영역 - 항상 렌더링 */}
       <div className="absolute left-[-9999px] top-0">
         <div ref={captureRef} className="w-[420px] bg-gradient-to-b from-[#1a1a2e] to-[#16162a]">
-          {/* 대화 헤더 - 더 세련되게 */}
+          {/* 대화 헤더 */}
           <div className="px-6 py-5 bg-gradient-to-r from-coral/20 to-gold/10 border-b border-coral/30">
             <div className="flex items-center gap-4">
               <div
@@ -542,37 +542,31 @@ const ChatInterface = memo(function ChatInterface() {
                 }}
               />
               <div>
-                <div className="flex items-center gap-2 mb-0.5">
-                  <p className="text-coral font-display font-bold text-xl">{activePerson?.name}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 bg-coral/20 rounded-full text-coral text-xs leading-none">
-                    {activePerson?.timeDirection === 'past' ? t.past : t.future}
-                  </span>
-                  <span className="text-cream/70 text-sm">{activePerson?.targetAge}{t.ageUnit}</span>
-                </div>
+                <p className="text-coral font-display font-bold text-xl">{activePerson?.name}</p>
+                <p className="text-cream/50 text-sm mt-1" style={{ fontFamily: 'system-ui, sans-serif' }}>
+                  그리운 {activePerson?.name} · {activePerson?.targetAge}{t.ageUnit}
+                </p>
               </div>
             </div>
           </div>
 
           {/* 메시지들 */}
-          <div className="px-5 py-5">
-            <div className="space-y-4">
+          <div className="px-6 py-5">
+            <div className="space-y-5">
               {messagesToCapture.map((msg, i) => (
                 <div
                   key={i}
-                  className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+                  className={`${msg.role === 'user' ? 'text-right' : 'text-left'}`}
                 >
-                  <div
-                    className={`max-w-[85%] min-h-[56px] px-5 text-base leading-relaxed flex items-center ${
-                      msg.role === 'user'
-                        ? 'rounded-2xl rounded-br-sm bg-gradient-to-br from-coral to-coral-dark text-white shadow-md shadow-coral/30'
-                        : 'rounded-2xl rounded-bl-sm bg-[#2a2a3e] text-cream border border-coral/20 shadow-md shadow-black/20'
+                  <p
+                    className={`text-[15px] leading-relaxed ${
+                      msg.role === 'user' ? 'text-coral' : 'text-cream'
                     }`}
+                    style={{ wordBreak: 'keep-all' }}
                   >
                     {msg.content}
-                  </div>
-                  <span className="text-xs mt-1 text-cream/40">
+                  </p>
+                  <span className="text-xs text-cream/30 mt-1 inline-block">
                     {msg.timestamp}
                   </span>
                 </div>

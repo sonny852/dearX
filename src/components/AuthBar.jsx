@@ -3,11 +3,14 @@ import { User, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 const AuthBar = memo(function AuthBar() {
-  const { authUser, authLoading, handleLogin, handleLogout, showChat, setShowMyPage, t } = useApp();
+  const { authUser, authLoading, handleLogin, handleLogout, showChat, showPersonForm, setShowMyPage, t } = useApp();
   const [showLoginModal, setShowLoginModal] = useState(false);
 
-  // 채팅 화면에서는 AuthBar 숨김
-  if (showChat) return null;
+  // 채팅 화면이나 인물 수정 화면에서는 AuthBar 숨김
+  if (showChat || showPersonForm) return null;
+
+  // 로딩 중에는 아무것도 표시하지 않음 (깜빡임 방지)
+  if (authLoading) return null;
 
   return (
     <>

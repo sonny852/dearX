@@ -266,16 +266,19 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
 
   const currentStepData = steps[currentStep];
   const isComplete = currentStep >= steps.length;
-  const canSubmit = currentPersonForm.relationship && currentPersonForm.name &&
-                    currentPersonForm.targetYear && currentPersonForm.targetAge &&
-                    currentPersonForm.gender && currentPersonForm.myNickname;
+  // 편집 모드 체크
+  const isEditMode = !isInitialForm && editingPersonIndex !== null;
+  // 편집 모드에서는 이름과 관계만 필수, 새로 만들기에서는 전부 필수
+  const canSubmit = isEditMode
+    ? (currentPersonForm.relationship && currentPersonForm.name)
+    : (currentPersonForm.relationship && currentPersonForm.name &&
+       currentPersonForm.targetYear && currentPersonForm.targetAge &&
+       currentPersonForm.gender && currentPersonForm.myNickname);
 
   // Show progress bar only after first step (for initial form) or always (for modal)
   const showProgressBar = !isInitialForm || currentStep > 0;
 
   // 편집 모드 - 모든 필드 한 번에 표시
-  const isEditMode = !isInitialForm && editingPersonIndex !== null;
-
   if (isEditMode) {
     return (
       <div className="fixed inset-0 z-[200] flex flex-col bg-dark">
