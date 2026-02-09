@@ -10,7 +10,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
-        flowType: 'pkce',
         persistSession: true,
         storageKey: 'dearx-auth-token',
         autoRefreshToken: true,
