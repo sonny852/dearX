@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.routers import auth_router, people_router, messages_router, storage_router, chat_router, premium_router
+from app.routers import auth_router, people_router, messages_router, storage_router, chat_router, premium_router, payment_router
 
 # FastAPI 앱 생성
 app = FastAPI(
@@ -26,6 +26,7 @@ app.include_router(messages_router)
 app.include_router(storage_router)
 app.include_router(chat_router)
 app.include_router(premium_router)
+app.include_router(payment_router)
 
 
 @app.get("/")

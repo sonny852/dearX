@@ -1,13 +1,9 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import { translations } from '../constants/translations';
 import { supabase, auth, db } from '../lib/supabase';
+import { sendChatMessage } from '../lib/api';
 
 const AppContext = createContext(null);
-
-// Supabase Edge Function URL (배포 후 설정)
-const CHAT_FUNCTION_URL = process.env.REACT_APP_SUPABASE_URL
-  ? `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/chat`
-  : null;
 
 export function AppProvider({ children }) {
   const [language, setLanguage] = useState('ko');
@@ -545,21 +541,9 @@ export function AppProvider({ children }) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [authUser]);
 
-  // 메시지 전송 (Claude API 연동)
+  // 메시지 전송 (FastAPI 백엔드 경유 — rate limit + 메시지 저장 + Claude API)
   const sendMessage = useCallback(async () => {
     if (!input.trim() || !activePerson) return;
-
-    // Check message limit for non-premium users
-    if (!authUser?.isPremium && messageCount >= FREE_MESSAGE_LIMIT) {
-      // 로그인 안 되어있으면 로그인 먼저 요청
-      if (!authUser) {
-        setPendingPaymentAfterLogin(true);
-        setShowLoginRequired(true);
-      } else {
-        setShowPaymentPopup(true);
-      }
-      return;
-    }
 
     const userMessage = {
       role: 'user',
@@ -574,90 +558,68 @@ export function AppProvider({ children }) {
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsTyping(true);
-    setMessageCount((prev) => prev + 1);
 
-    // 사용자 메시지 DB 저장
-    if (supabase && authUser && activePerson?.id) {
-      db.saveMessage(authUser.id, activePerson.id, { role: 'user', content: input });
-    }
+    try {
+      // FastAPI가 메시지 저장 + rate limit + Claude API 호출을 모두 처리
+      const data = await sendChatMessage({
+        personId: activePerson.id,
+        person: activePerson,
+        messages: [...messages, userMessage].map(m => ({
+          role: m.role,
+          content: m.content,
+        })),
+        userName: authUser?.name || 'User',
+        language,
+      });
 
-    // API 호출
-    if (CHAT_FUNCTION_URL) {
-      try {
-        const requestBody = {
-          person: activePerson,
-          messages: [...messages, userMessage].map(m => ({
-            role: m.role,
-            content: m.content,
-          })),
-          userName: authUser?.name || 'User',
-          language: language, // ko, en, ja
-        };
+      const newMessage = {
+        role: 'assistant',
+        content: data.message,
+        imageUrl: data.imageUrl || null,
+        timestamp: new Date().toLocaleDateString('ko-KR', {
+          year: 'numeric', month: '2-digit', day: '2-digit'
+        }).replace(/\. /g, '.').replace(/\.$/, ''),
+        mode: activePerson.timeDirection,
+      };
+      setMessages((prev) => [...prev, newMessage]);
 
-        const anonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
-        const response = await fetch(CHAT_FUNCTION_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': anonKey,
-          },
-          body: JSON.stringify(requestBody),
-        });
-
-        const data = await response.json();
-        if (response.ok) {
-          const newMessage = {
+      // 서버에서 전달받은 남은 메시지 수로 동기화
+      if (data.remainingMessages !== undefined && data.remainingMessages !== null) {
+        setMessageCount(FREE_MESSAGE_LIMIT - data.remainingMessages);
+      }
+    } catch (error) {
+      // 429: rate limit 초과
+      if (error.status === 429) {
+        if (!authUser) {
+          setPendingPaymentAfterLogin(true);
+          setShowLoginRequired(true);
+        } else {
+          setShowPaymentPopup(true);
+        }
+      } else {
+        // Fallback: 기본 응답 (API 실패 또는 Demo mode)
+        const responses = [
+          `${activePerson.favoriteWords || '괜찮아요. 당신은 충분히 잘하고 있어요.'}`,
+          `그때의 우리는 정말 행복했어요.`,
+          `당신은 혼자가 아니에요. 제가 여기 있잖아요.`,
+        ];
+        const responseContent = responses[Math.floor(Math.random() * responses.length)];
+        setMessages((prev) => [
+          ...prev,
+          {
             role: 'assistant',
-            content: data.message,
-            imageUrl: data.imageUrl || null,
+            content: responseContent,
             timestamp: new Date().toLocaleDateString('ko-KR', {
               year: 'numeric', month: '2-digit', day: '2-digit'
             }).replace(/\. /g, '.').replace(/\.$/, ''),
             mode: activePerson.timeDirection,
-          };
-          setMessages((prev) => [...prev, newMessage]);
-          // AI 응답 DB 저장
-          if (supabase && authUser && activePerson?.id) {
-            db.saveMessage(authUser.id, activePerson.id, {
-              role: 'assistant',
-              content: data.message,
-              image_url: data.imageUrl || null,
-            });
-          }
-          setIsTyping(false);
-          return;
-        }
-      } catch (error) {
-        // API error - using fallback
+          },
+        ]);
       }
-    }
-
-    // Fallback: 기본 응답 (API 실패 또는 Demo mode)
-    setTimeout(async () => {
-      const responses = [
-        `${activePerson.favoriteWords || '괜찮아요. 당신은 충분히 잘하고 있어요.'}`,
-        `그때의 우리는 정말 행복했어요.`,
-        `당신은 혼자가 아니에요. 제가 여기 있잖아요.`,
-      ];
-      const responseContent = responses[Math.floor(Math.random() * responses.length)];
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: responseContent,
-          timestamp: new Date().toLocaleDateString('ko-KR', {
-            year: 'numeric', month: '2-digit', day: '2-digit'
-          }).replace(/\. /g, '.').replace(/\.$/, ''),
-          mode: activePerson.timeDirection,
-        },
-      ]);
-      // Fallback 응답도 DB 저장
-      if (supabase && authUser && activePerson?.id) {
-        db.saveMessage(authUser.id, activePerson.id, { role: 'assistant', content: responseContent });
-      }
+    } finally {
       setIsTyping(false);
-    }, 1500);
-  }, [input, activePerson, messages, authUser, messageCount]);
+    }
+  }, [input, activePerson, messages, authUser, language]);
 
   const handleBackFromChat = useCallback(() => {
     setShowChat(false);

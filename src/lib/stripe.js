@@ -1,8 +1,13 @@
 // Stripe 결제 관련 유틸리티
+// FastAPI 백엔드의 /payment 엔드포인트를 통해 처리
 
-const PAYMENT_FUNCTION_URL = process.env.REACT_APP_SUPABASE_URL
-  ? `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/payment`
-  : null;
+import {
+  createPaymentIntent as apiCreatePaymentIntent,
+  confirmPayment as apiConfirmPayment,
+  getPaymentStatus as apiGetPaymentStatus,
+} from './api';
+
+const API_URL = process.env.REACT_APP_API_URL;
 
 /**
  * 결제 인텐트 생성
@@ -12,7 +17,7 @@ const PAYMENT_FUNCTION_URL = process.env.REACT_APP_SUPABASE_URL
  * @returns {Promise<{clientSecret: string, amount: number, currency: string}>}
  */
 export async function createPaymentIntent(planType, userId, email) {
-  if (!PAYMENT_FUNCTION_URL) {
+  if (!API_URL) {
     // Demo mode - 테스트용 더미 반환
     return {
       clientSecret: 'demo_secret',
@@ -22,20 +27,7 @@ export async function createPaymentIntent(planType, userId, email) {
     };
   }
 
-  const response = await fetch(`${PAYMENT_FUNCTION_URL}/create-intent`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ planType, userId, email }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to create payment intent');
-  }
-
-  return response.json();
+  return apiCreatePaymentIntent(planType, userId, email);
 }
 
 /**
@@ -45,7 +37,7 @@ export async function createPaymentIntent(planType, userId, email) {
  * @returns {Promise<{success: boolean, expiresAt: string}>}
  */
 export async function confirmPayment(paymentIntentId, userId) {
-  if (!PAYMENT_FUNCTION_URL) {
+  if (!API_URL) {
     // Demo mode
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
@@ -55,20 +47,7 @@ export async function confirmPayment(paymentIntentId, userId) {
     };
   }
 
-  const response = await fetch(`${PAYMENT_FUNCTION_URL}/confirm`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ paymentIntentId, userId }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to confirm payment');
-  }
-
-  return response.json();
+  return apiConfirmPayment(paymentIntentId, userId);
 }
 
 /**
@@ -77,22 +56,11 @@ export async function confirmPayment(paymentIntentId, userId) {
  * @returns {Promise<{isPremium: boolean, expiresAt: string | null}>}
  */
 export async function getPremiumStatus(userId) {
-  if (!PAYMENT_FUNCTION_URL) {
+  if (!API_URL) {
     return { isPremium: false, expiresAt: null };
   }
 
-  const response = await fetch(`${PAYMENT_FUNCTION_URL}/status?userId=${userId}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    return { isPremium: false, expiresAt: null };
-  }
-
-  return response.json();
+  return apiGetPaymentStatus(userId);
 }
 
 /**

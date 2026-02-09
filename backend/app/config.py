@@ -10,6 +10,14 @@ class Settings(BaseSettings):
     supabase_key: str
     supabase_service_role_key: str | None = None
 
+    # External API keys
+    anthropic_api_key: str | None = None
+    openai_api_key: str | None = None
+    stripe_secret_key: str | None = None
+
+    # Rate limiting
+    free_message_limit: int = 5
+
     api_host: str = "0.0.0.0"
     api_port: int = 8000
 

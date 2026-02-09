@@ -127,3 +127,9 @@ CREATE TRIGGER update_profiles_updated_at
 CREATE TRIGGER update_people_updated_at
   BEFORE UPDATE ON people
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- 8. 마이그레이션: 하이브리드 아키텍처 지원
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS image_url TEXT;
+ALTER TABLE people ADD COLUMN IF NOT EXISTS my_nickname TEXT;
+ALTER TABLE people ADD COLUMN IF NOT EXISTS family TEXT;
+CREATE INDEX IF NOT EXISTS idx_messages_user_date ON messages(user_id, created_at);

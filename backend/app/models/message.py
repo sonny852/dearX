@@ -6,6 +6,7 @@ class MessageBase(BaseModel):
     """Message 기본 모델"""
     role: str  # 'user' or 'assistant'
     content: str
+    image_url: str | None = None
 
 
 class MessageCreate(MessageBase):
