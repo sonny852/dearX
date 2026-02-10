@@ -44,17 +44,21 @@ export const auth = {
     });
   },
 
-  // 구글 로그인 URL 미리 생성 (Safari 모바일: async 리디렉트 차단 대응)
-  getGoogleAuthUrl: async () => {
+  // OAuth URL 미리 생성 (모바일 Safari: async 리디렉트 차단 대응)
+  // skipBrowserRedirect로 JS 리디렉트만 막고, URL에서 skip_http_redirect 제거해야 서버가 정상 리디렉트함
+  getAuthUrl: async (provider, scopes) => {
     if (!supabase) return null;
-    const { data } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}`,
-        skipBrowserRedirect: true,
-      },
-    });
-    return data?.url || null;
+    const options = {
+      redirectTo: `${window.location.origin}`,
+      skipBrowserRedirect: true,
+    };
+    if (scopes) options.scopes = scopes;
+    const { data } = await supabase.auth.signInWithOAuth({ provider, options });
+    if (!data?.url) return null;
+    // skip_http_redirect 제거 — 이 파라미터가 있으면 Supabase가 리디렉트 대신 JSON 반환
+    const url = new URL(data.url);
+    url.searchParams.delete('skip_http_redirect');
+    return url.toString();
   },
 
   // 로그아웃

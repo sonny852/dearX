@@ -4,16 +4,16 @@ import { useApp } from '../context/AppContext';
 import { auth } from '../lib/supabase';
 
 const AuthBar = memo(function AuthBar() {
-  const { authUser, authLoading, handleLogin, handleLogout, showChat, showPersonForm, setShowMyPage, t } = useApp();
+  const { authUser, authLoading, handleLogout, showChat, showPersonForm, setShowMyPage, t } = useApp();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [googleAuthUrl, setGoogleAuthUrl] = useState(null);
 
-  // 모달 열리면 Google OAuth URL 미리 생성
-  // Safari 모바일: signInWithOAuth가 async라 클릭 시 user gesture 컨텍스트 유실 → 네비게이션 차단됨
+  // 모달 열리면 Google OAuth URL 미리 생성 (PKCE code_verifier 포함)
+  // 모바일 Safari: signInWithOAuth 내부의 async SHA-256 때문에 user gesture 유실 → 네비게이션 차단
   // 미리 URL을 만들어두면 클릭 시 동기적으로 window.location.href 가능
   useEffect(() => {
     if (showLoginModal) {
-      auth.getGoogleAuthUrl().then(url => {
+      auth.getAuthUrl('google').then(url => {
         if (url) setGoogleAuthUrl(url);
       });
     }
@@ -28,12 +28,10 @@ const AuthBar = memo(function AuthBar() {
 
   const handleGoogleLogin = () => {
     if (googleAuthUrl) {
-      // 미리 생성된 URL로 동기 리디렉트 (Safari 대응)
+      // 미리 생성된 URL로 동기 리디렉트 (Safari/Chrome 모바일 모두 대응)
       window.location.href = googleAuthUrl;
-    } else {
-      // URL 아직 안 만들어졌으면 기존 방식 fallback
-      handleLogin('google');
     }
+    // URL 아직 준비 안 됐으면 무시 (보통 수십 ms 내에 준비됨)
   };
 
   return (
@@ -106,7 +104,7 @@ const AuthBar = memo(function AuthBar() {
               {/* Google */}
               <button
                 onClick={handleGoogleLogin}
-                disabled={authLoading}
+                disabled={authLoading || !googleAuthUrl}
                 className="w-full h-[54px] rounded-2xl bg-white text-[#333] text-[15px] font-semibold flex items-center justify-center gap-3 cursor-pointer border-none hover:brightness-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <img
