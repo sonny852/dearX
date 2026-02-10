@@ -101,31 +101,26 @@ export function AppProvider({ children }) {
 
   const t = useMemo(() => translations[language], [language]);
 
-  // Supabase 인증 상태 감지 (onAuthStateChange만 사용)
+  // Supabase 인증 상태 감지
   useEffect(() => {
     if (!supabase || !auth) {
       setAuthLoading(false);
       return;
     }
 
-    // OAuth 리디렉트에서 돌아온 건지 확인 (implicit: hash, PKCE: code param)
-    const isOAuthRedirect = window.location.hash.includes('access_token')
-      || window.location.search.includes('code=');
+    // URL hash에서 OAuth 토큰 확인 (detectSessionInUrl이 모바일에서 실패하므로 수동 처리)
+    const hash = window.location.hash;
+    const hasOAuthTokens = hash && hash.includes('access_token');
 
     let subscription;
     try {
       const { data } = auth.onAuthStateChange(async (event, session) => {
-        // INITIAL_SESSION: 페이지 로드 시 세션 복원
-        // SIGNED_IN: 새로 로그인
-        // TOKEN_REFRESHED: 토큰 갱신
         if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
-          // Google은 full_name 또는 name을 사용, Kakao는 name을 사용
           const oauthName = session.user.user_metadata?.full_name
             || session.user.user_metadata?.name
             || session.user.email?.split('@')[0]
             || 'User';
 
-          // 세션 데이터로 임시 로그인 처리
           setAuthUser({
             id: session.user.id,
             email: session.user.email,
@@ -133,13 +128,12 @@ export function AppProvider({ children }) {
             isPremium: false,
           });
 
-          // 프로필 및 사람 목록 로드 후 로딩 해제 (화면 깜빡임 방지)
+          // 프로필 및 사람 목록 로드 후 로딩 해제
           (async () => {
             try {
               const { data: profile } = await db.getOrCreateProfile(session.user.id);
 
               if (profile?.name) {
-                // 프로필 데이터로 업데이트
                 setAuthUser({
                   id: session.user.id,
                   email: session.user.email,
@@ -148,7 +142,6 @@ export function AppProvider({ children }) {
                   premiumExpiresAt: profile?.premium_expires_at,
                 });
 
-                // 로그인 전에 결제 대기 중이었으면 결제 팝업 표시
                 const pendingPayment = localStorage.getItem('dearx_pending_payment') === 'true';
                 if (pendingPayment && !(profile?.is_premium)) {
                   localStorage.removeItem('dearx_pending_payment');
@@ -156,7 +149,6 @@ export function AppProvider({ children }) {
                   setShowPaymentPopup(true);
                 }
               } else if (!profile) {
-                // 첫 로그인 - 이름 입력 팝업 표시
                 setPendingAuthUser({
                   id: session.user.id,
                   email: session.user.email,
@@ -166,7 +158,6 @@ export function AppProvider({ children }) {
                 setShowNameInput(true);
               }
 
-              // 저장된 사람 목록 로드
               const { data: people } = await db.getPeople(session.user.id);
               if (people && people.length > 0) {
                 setAdditionalPeople(people.map(p => ({
@@ -195,10 +186,9 @@ export function AppProvider({ children }) {
           setAuthUser(null);
           setAdditionalPeople([]);
           setAuthLoading(false);
-        } else if (event === 'INITIAL_SESSION') {
-          // 세션 없이 INITIAL_SESSION이 온 경우
-          // OAuth 리디렉트 중이면 SIGNED_IN 이벤트를 기다림 (5초 타임아웃이 fallback)
-          if (!isOAuthRedirect) {
+        } else if (event === 'INITIAL_SESSION' && !session) {
+          // 세션 없음 - OAuth 토큰이 URL에 있으면 아래에서 수동 처리할 것
+          if (!hasOAuthTokens) {
             setAuthLoading(false);
           }
         }
@@ -207,6 +197,31 @@ export function AppProvider({ children }) {
     } catch (error) {
       console.error('Auth state change error:', error);
       setAuthLoading(false);
+    }
+
+    // URL hash에 OAuth 토큰이 있으면 수동으로 세션 설정
+    if (hasOAuthTokens) {
+      const params = new URLSearchParams(hash.substring(1));
+      const access_token = params.get('access_token');
+      const refresh_token = params.get('refresh_token');
+
+      if (access_token && refresh_token) {
+        supabase.auth.setSession({ access_token, refresh_token })
+          .then(({ error }) => {
+            // URL에서 토큰 제거
+            window.history.replaceState(null, '', window.location.pathname);
+            if (error) {
+              console.error('OAuth session error:', error);
+              setAuthLoading(false);
+            }
+            // 성공 시 onAuthStateChange의 SIGNED_IN 이벤트가 처리
+          })
+          .catch(() => {
+            setAuthLoading(false);
+          });
+      } else {
+        setAuthLoading(false);
+      }
     }
 
     return () => subscription?.unsubscribe();
