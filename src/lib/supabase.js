@@ -14,7 +14,6 @@ export const supabase = supabaseUrl && supabaseAnonKey
         storageKey: 'dearx-auth-token',
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        flowType: 'pkce',
       }
     })
   : null;
