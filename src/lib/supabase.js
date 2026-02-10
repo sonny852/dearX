@@ -10,10 +10,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
+        flowType: 'pkce',
         persistSession: true,
         storageKey: 'dearx-auth-token',
         autoRefreshToken: true,
-        detectSessionInUrl: false, // 모바일에서 자동 감지 실패 → AppContext에서 수동 처리
+        detectSessionInUrl: true,
       }
     })
   : null;

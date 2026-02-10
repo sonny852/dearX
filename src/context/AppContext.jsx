@@ -101,16 +101,12 @@ export function AppProvider({ children }) {
 
   const t = useMemo(() => translations[language], [language]);
 
-  // Supabase 인증 상태 감지
+  // Supabase 인증 상태 감지 (detectSessionInUrl: true → Supabase가 URL hash 자동 처리)
   useEffect(() => {
     if (!supabase || !auth) {
       setAuthLoading(false);
       return;
     }
-
-    // URL hash에서 OAuth 토큰 확인 (detectSessionInUrl이 모바일에서 실패하므로 수동 처리)
-    const hash = window.location.hash;
-    const hasOAuthTokens = hash && hash.includes('access_token');
 
     let subscription;
     try {
@@ -187,41 +183,13 @@ export function AppProvider({ children }) {
           setAdditionalPeople([]);
           setAuthLoading(false);
         } else if (event === 'INITIAL_SESSION' && !session) {
-          // 세션 없음 - OAuth 토큰이 URL에 있으면 아래에서 수동 처리할 것
-          if (!hasOAuthTokens) {
-            setAuthLoading(false);
-          }
+          setAuthLoading(false);
         }
       });
       subscription = data?.subscription;
     } catch (error) {
       console.error('Auth state change error:', error);
       setAuthLoading(false);
-    }
-
-    // URL hash에 OAuth 토큰이 있으면 수동으로 세션 설정
-    if (hasOAuthTokens) {
-      const params = new URLSearchParams(hash.substring(1));
-      const access_token = params.get('access_token');
-      const refresh_token = params.get('refresh_token');
-
-      if (access_token && refresh_token) {
-        supabase.auth.setSession({ access_token, refresh_token })
-          .then(({ error }) => {
-            // URL에서 토큰 제거
-            window.history.replaceState(null, '', window.location.pathname);
-            if (error) {
-              console.error('OAuth session error:', error);
-              setAuthLoading(false);
-            }
-            // 성공 시 onAuthStateChange의 SIGNED_IN 이벤트가 처리
-          })
-          .catch(() => {
-            setAuthLoading(false);
-          });
-      } else {
-        setAuthLoading(false);
-      }
     }
 
     return () => subscription?.unsubscribe();
