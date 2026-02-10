@@ -1,16 +1,40 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { User, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { auth } from '../lib/supabase';
 
 const AuthBar = memo(function AuthBar() {
   const { authUser, authLoading, handleLogin, handleLogout, showChat, showPersonForm, setShowMyPage, t } = useApp();
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [googleAuthUrl, setGoogleAuthUrl] = useState(null);
+
+  // 모달 열리면 Google OAuth URL 미리 생성
+  // Safari 모바일: signInWithOAuth가 async라 클릭 시 user gesture 컨텍스트 유실 → 네비게이션 차단됨
+  // 미리 URL을 만들어두면 클릭 시 동기적으로 window.location.href 가능
+  useEffect(() => {
+    if (showLoginModal) {
+      auth.getGoogleAuthUrl().then(url => {
+        if (url) setGoogleAuthUrl(url);
+      });
+    }
+    return () => setGoogleAuthUrl(null);
+  }, [showLoginModal]);
 
   // 채팅 화면이나 인물 수정 화면에서는 AuthBar 숨김
   if (showChat || showPersonForm) return null;
 
   // 로딩 중에는 아무것도 표시하지 않음 (깜빡임 방지)
   if (authLoading) return null;
+
+  const handleGoogleLogin = () => {
+    if (googleAuthUrl) {
+      // 미리 생성된 URL로 동기 리디렉트 (Safari 대응)
+      window.location.href = googleAuthUrl;
+    } else {
+      // URL 아직 안 만들어졌으면 기존 방식 fallback
+      handleLogin('google');
+    }
+  };
 
   return (
     <>
@@ -81,7 +105,7 @@ const AuthBar = memo(function AuthBar() {
             <div className="flex flex-col gap-3">
               {/* Google */}
               <button
-                onClick={() => { handleLogin('google'); setShowLoginModal(false); }}
+                onClick={handleGoogleLogin}
                 disabled={authLoading}
                 className="w-full h-[54px] rounded-2xl bg-white text-[#333] text-[15px] font-semibold flex items-center justify-center gap-3 cursor-pointer border-none hover:brightness-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >

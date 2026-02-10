@@ -14,6 +14,7 @@ export const supabase = supabaseUrl && supabaseAnonKey
         storageKey: 'dearx-auth-token',
         autoRefreshToken: true,
         detectSessionInUrl: true,
+        flowType: 'pkce',
       }
     })
   : null;
@@ -41,6 +42,19 @@ export const auth = {
         redirectTo: `${window.location.origin}`,
       },
     });
+  },
+
+  // 구글 로그인 URL 미리 생성 (Safari 모바일: async 리디렉트 차단 대응)
+  getGoogleAuthUrl: async () => {
+    if (!supabase) return null;
+    const { data } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}`,
+        skipBrowserRedirect: true,
+      },
+    });
+    return data?.url || null;
   },
 
   // 로그아웃

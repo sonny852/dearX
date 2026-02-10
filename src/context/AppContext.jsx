@@ -108,6 +108,10 @@ export function AppProvider({ children }) {
       return;
     }
 
+    // OAuth 리디렉트에서 돌아온 건지 확인 (implicit: hash, PKCE: code param)
+    const isOAuthRedirect = window.location.hash.includes('access_token')
+      || window.location.search.includes('code=');
+
     let subscription;
     try {
       const { data } = auth.onAuthStateChange(async (event, session) => {
@@ -121,16 +125,15 @@ export function AppProvider({ children }) {
             || session.user.email?.split('@')[0]
             || 'User';
 
-          // 먼저 세션 데이터로 임시 로그인 처리 (빠른 응답)
+          // 세션 데이터로 임시 로그인 처리
           setAuthUser({
             id: session.user.id,
             email: session.user.email,
             name: oauthName,
             isPremium: false,
           });
-          setAuthLoading(false);
 
-          // 백그라운드에서 프로필 및 사람 목록 로드 (느린 작업)
+          // 프로필 및 사람 목록 로드 후 로딩 해제 (화면 깜빡임 방지)
           (async () => {
             try {
               const { data: profile } = await db.getOrCreateProfile(session.user.id);
@@ -183,7 +186,9 @@ export function AppProvider({ children }) {
                 })));
               }
             } catch (error) {
-              // 백그라운드 fetch 에러 - 무시 (이미 임시 로그인 완료)
+              // DB fetch 에러 - 무시 (세션은 이미 복원됨)
+            } finally {
+              setAuthLoading(false);
             }
           })();
         } else if (event === 'SIGNED_OUT') {
@@ -191,13 +196,17 @@ export function AppProvider({ children }) {
           setAdditionalPeople([]);
           setAuthLoading(false);
         } else if (event === 'INITIAL_SESSION') {
-          // 세션 없이 INITIAL_SESSION이 온 경우 (로그아웃 상태)
-          setAuthLoading(false);
+          // 세션 없이 INITIAL_SESSION이 온 경우
+          // OAuth 리디렉트 중이면 SIGNED_IN 이벤트를 기다림 (5초 타임아웃이 fallback)
+          if (!isOAuthRedirect) {
+            setAuthLoading(false);
+          }
         }
       });
       subscription = data?.subscription;
     } catch (error) {
       console.error('Auth state change error:', error);
+      setAuthLoading(false);
     }
 
     return () => subscription?.unsubscribe();
