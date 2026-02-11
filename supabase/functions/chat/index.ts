@@ -216,7 +216,7 @@ function getCallName(relationship: string): string {
   return callNames[relationship] || '너';
 }
 
-function buildSystemPrompt(person: Person, userName: string, language: string = 'ko'): string {
+function buildSystemPrompt(person: Person, userName: string, language: string = 'ko', userGender?: string, userAge?: number): string {
   // 언어별 응답 지시
   const languageInstruction = {
     ko: '',
@@ -276,6 +276,8 @@ function buildSystemPrompt(person: Person, userName: string, language: string = 
 - 너의 이름: ${person.name}
 - 너의 나이: ${person.targetAge}세
 - 너와 대화하는 사람: ${relationship === 'self' ? `${person.currentAge}살의 나 자신` : userName}
+${userAge ? `- ${userName}의 나이: ${userAge}세` : ''}
+${userGender ? `- ${userName}의 성별: ${userGender === 'male' ? '남성' : '여성'}` : ''}
 ${relationship !== 'self' ? `- ${userName}은(는) 너의 입장에서 "${userCallName}"야.` : ''}
 ${selfContext}
 
@@ -373,13 +375,15 @@ serve(async (req) => {
       throw new Error('ANTHROPIC_API_KEY not configured (DearX-API-KEY secret missing)');
     }
 
-    const { person, messages, userName, language = 'ko' } = await req.json();
+    const { person, messages, userName, userGender, userBirthYear, language = 'ko' } = await req.json();
 
     if (!person || !messages || !userName) {
       throw new Error('Missing required fields: person, messages, userName');
     }
 
-    const systemPrompt = buildSystemPrompt(person, userName, language);
+    // 사용자 나이 계산
+    const userAge = userBirthYear ? (new Date().getFullYear() - userBirthYear) : undefined;
+    const systemPrompt = buildSystemPrompt(person, userName, language, userGender, userAge);
 
     // 마지막 사용자 메시지 확인
     const lastUserMessage = messages[messages.length - 1]?.content || '';

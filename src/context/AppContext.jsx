@@ -134,6 +134,8 @@ export function AppProvider({ children }) {
                   id: session.user.id,
                   email: session.user.email,
                   name: profile.name,
+                  gender: profile.gender || null,
+                  birthYear: profile.birth_year || null,
                   isPremium: profile?.is_premium || false,
                   premiumExpiresAt: profile?.premium_expires_at,
                 });
@@ -231,13 +233,16 @@ export function AppProvider({ children }) {
     setMessages([]);
   }, []);
 
-  // 이름 저장 핸들러 (첫 로그인 시)
-  const handleSaveName = useCallback(async (name) => {
+  // 이름/성별/생년 저장 핸들러 (첫 로그인 시)
+  const handleSaveName = useCallback(async (name, gender, birthYear) => {
     if (!pendingAuthUser || !name.trim()) return;
 
-    // DB에 이름 저장
+    // DB에 프로필 저장
+    const profileData = { name: name.trim() };
+    if (gender) profileData.gender = gender;
+    if (birthYear) profileData.birth_year = birthYear;
     if (supabase) {
-      await db.updateProfile(pendingAuthUser.id, { name: name.trim() });
+      await db.updateProfile(pendingAuthUser.id, profileData);
     }
 
     // authUser 설정
@@ -245,6 +250,8 @@ export function AppProvider({ children }) {
       id: pendingAuthUser.id,
       email: pendingAuthUser.email,
       name: name.trim(),
+      gender: gender || null,
+      birthYear: birthYear || null,
       isPremium: pendingAuthUser.isPremium,
       premiumExpiresAt: pendingAuthUser.premiumExpiresAt,
     });
@@ -521,6 +528,8 @@ export function AppProvider({ children }) {
             content: m.content,
           })),
           userName: authUser?.name || 'User',
+          userGender: authUser?.gender || null,
+          userBirthYear: authUser?.birthYear || null,
           language: language, // ko, en, ja
         };
 
