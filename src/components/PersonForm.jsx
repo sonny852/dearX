@@ -153,6 +153,11 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
       }
       return rel ? `그때 ${rel}은(는) 몇 살이었나요?` : '그때 몇 살이었나요?';
     }
+    if (stepIndex === 4) {
+      const name = currentPersonForm.name;
+      if (name) return `${name}의 성별을 알려주세요`;
+      return rel ? `${rel}의 성별을 알려주세요` : '성별을 알려주세요';
+    }
     if (stepIndex === 5) {
       return rel ? `${rel}이(가) 나를 뭐라고 불렀나요?` : '상대방이 나를 뭐라고 불렀나요?';
     }
