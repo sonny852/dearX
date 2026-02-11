@@ -565,13 +565,15 @@ export function AppProvider({ children }) {
             setMessages((prev) => [...prev, newMessage]);
           }
 
-          // AI 응답 DB 저장 (전체 메시지)
+          // AI 응답 DB 저장 (각 문장을 개별 레코드로)
           if (supabase && authUser && activePerson?.id) {
-            db.saveMessage(authUser.id, activePerson.id, {
-              role: 'assistant',
-              content: data.message.replace(/\|\|\|/g, '\n'), // DB에는 줄바꿈으로 저장
-              image_url: data.imageUrl || null,
-            });
+            for (let i = 0; i < messageParts.length; i++) {
+              db.saveMessage(authUser.id, activePerson.id, {
+                role: 'assistant',
+                content: messageParts[i],
+                image_url: i === 0 ? (data.imageUrl || null) : null,
+              });
+            }
           }
           setIsTyping(false);
           return;
