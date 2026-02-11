@@ -8,8 +8,8 @@ const AuthBar = memo(function AuthBar() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [googleAuthUrl, setGoogleAuthUrl] = useState(null);
 
-  // 모달 열리면 Google OAuth URL 미리 생성 (PKCE code_verifier 포함)
-  // 모바일 Safari: signInWithOAuth 내부의 async SHA-256 때문에 user gesture 유실 → 네비게이션 차단
+  // 모달 열리면 Google OAuth URL 미리 생성
+  // 모바일 Safari: signInWithOAuth 호출 후 리디렉트가 비동기라 user gesture 유실 가능
   // 미리 URL을 만들어두면 클릭 시 동기적으로 window.location.href 가능
   useEffect(() => {
     if (showLoginModal) {
