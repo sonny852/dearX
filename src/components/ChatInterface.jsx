@@ -48,7 +48,11 @@ const ChatInterface = memo(function ChatInterface() {
   const remainingFreeMessages = FREE_MESSAGE_LIMIT - messageCount;
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // 말풍선 애니메이션이 시작된 후 스크롤 (애니메이션 렌더링 대기)
+    const timer = setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+    return () => clearTimeout(timer);
   }, [messages]);
 
   // 플러스 메뉴 외부 클릭 시 닫기
