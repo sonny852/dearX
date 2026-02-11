@@ -232,15 +232,19 @@ const ChatInterface = memo(function ChatInterface() {
               </p>
             </div>
           )}
-          {messages.map((msg, i) => (
+          {messages.map((msg, i) => {
+            // 마지막 4개 메시지만 애니메이션, 나머지는 즉시 표시
+            const fromEnd = messages.length - 1 - i;
+            const shouldAnimate = fromEnd < 4;
+            return (
             <div
               key={i}
               className={`message-bubble mb-8 flex ${captureSelectMode ? 'cursor-pointer' : ''}`}
               style={{
                 justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                animationDelay: `${i * 0.1}s`,
-                opacity: 0,
-                animationFillMode: 'forwards',
+                ...(shouldAnimate
+                  ? { animationDelay: `${fromEnd * 0.05}s`, opacity: 0, animationFillMode: 'forwards' }
+                  : { opacity: 1 }),
               }}
               onClick={() => handleMessageSelect(i)}
             >
@@ -279,7 +283,8 @@ const ChatInterface = memo(function ChatInterface() {
                 </div>
               </div>
             </div>
-          ))}
+          );
+          })}
 
           {/* Typing indicator */}
           {isTyping && (
