@@ -540,8 +540,15 @@ export function AppProvider({ children }) {
             year: 'numeric', month: '2-digit', day: '2-digit'
           }).replace(/\. /g, '.').replace(/\.$/, '');
 
-          // ||| 구분자로 메시지 분리
-          const messageParts = data.message.split('|||').map(s => s.trim()).filter(s => s);
+          // ||| 구분자로 메시지 분리, 없으면 문장 단위로 자동 분리
+          let messageParts = data.message.split('|||').map(s => s.trim()).filter(s => s);
+          if (messageParts.length <= 1 && data.message.length > 20) {
+            // ||| 가 없으면 문장 끝(. ! ? ~)에서 분리 (마지막 문장 제외하고 분리)
+            messageParts = data.message
+              .split(/(?<=[.!?~])\s+/)
+              .map(s => s.trim())
+              .filter(s => s);
+          }
 
           // 여러 메시지를 순차적으로 추가
           for (let i = 0; i < messageParts.length; i++) {
