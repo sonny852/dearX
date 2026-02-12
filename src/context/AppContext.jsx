@@ -21,6 +21,7 @@ export function AppProvider({ children }) {
   // Message count for free tier
   const FREE_MESSAGE_LIMIT = 5;
   const [showPaymentPopup, setShowPaymentPopup] = useState(false);
+  const [paymentReason, setPaymentReason] = useState('messages'); // 'messages' | 'addPerson'
   const [showLoginRequired, setShowLoginRequired] = useState(false);
   const [showMyPage, setShowMyPage] = useState(false);
 
@@ -397,6 +398,7 @@ export function AppProvider({ children }) {
       return;
     }
     if (additionalPeople.length >= 1 && !authUser.isPremium) {
+      setPaymentReason('addPerson');
       setShowPaymentPopup(true);
       return;
     }
@@ -620,6 +622,7 @@ export function AppProvider({ children }) {
           localStorage.setItem('dearx_pending_chat', JSON.stringify(pendingChat));
         } catch (e) { /* 저장 실패 무시 */ }
       } else {
+        setPaymentReason('messages');
         setShowPaymentPopup(true);
       }
       return;
@@ -800,6 +803,7 @@ export function AppProvider({ children }) {
       setMessageCount,
       showPaymentPopup,
       setShowPaymentPopup,
+      paymentReason,
       showLoginRequired,
       setShowLoginRequired,
       showMyPage,

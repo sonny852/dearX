@@ -6,6 +6,7 @@ const PaymentPopup = memo(function PaymentPopup() {
   const {
     showPaymentPopup,
     setShowPaymentPopup,
+    paymentReason,
     FREE_MESSAGE_LIMIT,
     t,
   } = useApp();
@@ -55,7 +56,9 @@ const PaymentPopup = memo(function PaymentPopup() {
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-coral/20">
           <h2 className="text-xl font-display font-bold text-coral m-0">
-            {t.freeMessagesUsed || '무료 대화 횟수를 모두 사용했어요'}
+            {paymentReason === 'addPerson'
+              ? '소중한 사람을 더 만나보세요'
+              : (t.freeMessagesUsed || '오늘 무료 대화를 모두 사용했어요')}
           </h2>
           <button
             onClick={handleClose}
@@ -70,10 +73,14 @@ const PaymentPopup = memo(function PaymentPopup() {
           {/* Message about free limit */}
           <div className="text-center mb-6">
             <p className="text-cream/70 text-sm">
-              {t.freeMessagesInfo || `${FREE_MESSAGE_LIMIT}회 무료 대화를 모두 사용하셨습니다.`}
+              {paymentReason === 'addPerson'
+                ? '무료 플랜은 1명까지 대화할 수 있어요'
+                : (t.freeMessagesInfo || `하루 ${FREE_MESSAGE_LIMIT}회 무료 대화를 모두 사용하셨습니다.`)}
             </p>
             <p className="text-cream/50 text-xs mt-2">
-              {t.continueWithPremium || '프리미엄으로 계속 대화하세요'}
+              {paymentReason === 'addPerson'
+                ? '프리미엄에서 여러 사람과 대화할 수 있어요'
+                : (t.continueWithPremium || '프리미엄으로 계속 대화하세요')}
             </p>
           </div>
 
