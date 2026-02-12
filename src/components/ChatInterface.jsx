@@ -316,7 +316,7 @@ const ChatInterface = memo(function ChatInterface() {
             return (
             <div
               key={i}
-              className={`message-bubble mb-4 flex ${captureSelectMode ? 'cursor-pointer' : ''}`}
+              className={`message-bubble mb-2 flex ${captureSelectMode ? 'cursor-pointer' : ''}`}
               style={{
                 justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
                 ...(shouldAnimate
@@ -326,19 +326,19 @@ const ChatInterface = memo(function ChatInterface() {
               onClick={() => handleMessageSelect(i)}
             >
               <div
-                className={`max-w-[80%] p-3 transition-all ${
+                className={`max-w-[80%] px-3 py-2 transition-all ${
                   msg.role === 'user'
-                    ? 'rounded-3xl rounded-br-sm bg-gradient-to-br from-coral to-coral-dark shadow-lg shadow-coral/30'
-                    : 'rounded-3xl rounded-bl-sm bg-dark-card border border-coral/30 shadow-lg shadow-black/30'
+                    ? 'rounded-2xl rounded-br-sm bg-gradient-to-br from-coral to-coral-dark shadow-md shadow-coral/20'
+                    : 'rounded-2xl rounded-bl-sm bg-dark-card border border-coral/30 shadow-md shadow-black/20'
                 } ${captureSelectMode && isMessageInRange(i) ? 'ring-2 ring-gold ring-offset-2 ring-offset-dark' : ''}`}
               >
                 {/* 이미지가 있으면 표시 */}
                 {msg.imageUrl && (
-                  <div className="mb-4">
+                  <div className="mb-1.5">
                     <img
                       src={msg.imageUrl}
                       alt="Generated"
-                      className="w-full max-w-[300px] rounded-2xl border border-coral/20"
+                      className="w-full max-w-[300px] rounded-xl border border-coral/20"
                       loading="lazy"
                     />
                   </div>
@@ -351,11 +351,11 @@ const ChatInterface = memo(function ChatInterface() {
                   {msg.content}
                 </p>
                 <div
-                  className={`mt-3 text-xs flex items-center gap-2 ${
-                    msg.role === 'user' ? 'text-white/60' : 'text-coral/80'
+                  className={`mt-1 text-[10px] flex items-center gap-1 ${
+                    msg.role === 'user' ? 'text-white/50' : 'text-coral/60'
                   }`}
                 >
-                  <Clock size={12} />
+                  <Clock size={10} />
                   {msg.timestamp}
                 </div>
               </div>
