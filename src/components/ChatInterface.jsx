@@ -32,6 +32,34 @@ const ChatInterface = memo(function ChatInterface() {
   const [captureStyle, setCaptureStyle] = useState('letter');
   const captureRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const containerRef = useRef(null);
+
+  // iOS Safari 키보드 대응: visualViewport 추적
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    let rafId;
+    const handleViewport = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        if (containerRef.current) {
+          containerRef.current.style.height = `${viewport.height}px`;
+          containerRef.current.style.transform = `translateY(${viewport.offsetTop}px)`;
+        }
+      });
+    };
+
+    viewport.addEventListener('resize', handleViewport);
+    viewport.addEventListener('scroll', handleViewport);
+    handleViewport();
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      viewport.removeEventListener('resize', handleViewport);
+      viewport.removeEventListener('scroll', handleViewport);
+    };
+  }, []);
 
   // 캡처할 메시지들 계산
   const messagesToCapture = captureRange.start !== null && captureRange.end !== null
@@ -163,7 +191,7 @@ const ChatInterface = memo(function ChatInterface() {
   if (!activePerson) return null;
 
   return (
-    <div className="fixed inset-0 bg-dark z-[100] flex flex-col">
+    <div ref={containerRef} className="fixed top-0 left-0 right-0 bg-dark z-[100] flex flex-col" style={{ height: '100%', willChange: 'transform, height' }}>
       {/* Header */}
       <div className="p-4 border-b border-coral/20 bg-gradient-to-b from-dark/95 to-dark/80">
         <div className="max-w-[900px] mx-auto flex items-center justify-between">
@@ -213,7 +241,7 @@ const ChatInterface = memo(function ChatInterface() {
           background: 'radial-gradient(circle at 20% 30%, rgba(255, 140, 105, 0.04) 0%, transparent 50%)',
         }}
       >
-        <div className="max-w-[900px] mx-auto">
+        <div className="max-w-[900px] mx-auto min-h-full flex flex-col justify-end">
           {/* 비로그인 사용자 알림 */}
           {!authUser && (
             <div className="mb-6 p-4 bg-coral/10 border border-coral/30 rounded-2xl text-center">
@@ -678,7 +706,8 @@ const ChatInterface = memo(function ChatInterface() {
                     </div>
                   </td>
                   <td style={{ verticalAlign: 'middle' }}>
-                    <span style={{ fontFamily: 'Georgia, serif', fontSize: '14px', color: '#4a3728', fontWeight: 'bold', lineHeight: 1.4 }}>그리움을 만나다, DearX</span>
+                    <span style={{ fontFamily: 'Georgia, serif', fontSize: '14px', color: '#4a3728', fontWeight: 'bold', display: 'block', lineHeight: 1.2 }}>그리움을 만나다</span>
+                    <span style={{ fontSize: '11px', color: '#8a7560', display: 'block', lineHeight: 1.2 }}>DearX</span>
                   </td>
                 </tr></tbody></table>
                 <div style={{ background: 'white', padding: '4px', borderRadius: '4px', border: '1px solid #d4a574' }}>
@@ -789,7 +818,9 @@ const ChatInterface = memo(function ChatInterface() {
                     <img src="/favicon.png" alt="DearX" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
                   </td>
                   <td style={{ verticalAlign: 'middle' }}>
-                    <span style={{ fontSize: '14px', color: '#ffc17a', fontWeight: 'bold', lineHeight: 1.4 }}>그리움을 만나다, DearX</span>
+                    <span style={{ fontSize: '14px', color: '#ffc17a', fontWeight: 'bold', display: 'block', lineHeight: 1.2 }}>그리움을 만나다</span>
+                    <span style={{ fontSize: '11px', color: '#a78bba', display: 'block', lineHeight: 1.2 }}>DearX</span>
+
                   </td>
                 </tr></tbody></table>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -850,17 +881,24 @@ const ChatInterface = memo(function ChatInterface() {
               </div>
 
               {/* 브랜딩 푸터 */}
-              <div className="px-6 py-4 bg-[#12121f] flex items-center justify-between">
+              <div style={{
+                padding: '12px 24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: '#12121f',
+              }}>
                 <table style={{ borderCollapse: 'collapse' }}><tbody><tr>
-                  <td style={{ verticalAlign: 'middle', paddingRight: '16px' }}>
-                    <img src="/favicon.png" alt="DearX" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
+                  <td style={{ verticalAlign: 'middle', paddingRight: '12px' }}>
+                    <img src="/favicon.png" alt="DearX" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
                   </td>
                   <td style={{ verticalAlign: 'middle' }}>
-                    <span className="text-coral font-display font-bold text-lg leading-tight">그리움을 만나다, DearX</span>
+                    <span style={{ fontSize: '14px', color: '#ff8c69', fontWeight: 'bold', display: 'block', lineHeight: 1.2 }}>그리움을 만나다</span>
+                    <span style={{ fontSize: '11px', color: 'rgba(245,230,211,0.6)', display: 'block', lineHeight: 1.2 }}>DearX</span>
                   </td>
                 </tr></tbody></table>
-                <div className="bg-white p-1.5 rounded-xl shadow-lg">
-                  <QRCodeSVG value="https://dearx.io" size={56} />
+                <div style={{ background: 'white', padding: '4px', borderRadius: '8px' }}>
+                  <QRCodeSVG value="https://dearx.io" size={48} />
                 </div>
               </div>
             </>

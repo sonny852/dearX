@@ -185,7 +185,7 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
       return rel ? `${rel}의 이름은 무엇인가요?` : '이름을 알려주세요';
     }
     if (stepIndex === 2) {
-      return rel ? `몇 년도의 ${rel}을(를) 만나고 싶으세요?` : '몇 년도의 모습을 만나고 싶으세요?';
+      return rel ? `몇 년도의 ${rel}을(를) 만날까요?` : '몇 년도의 모습을 만날까요?';
     }
     if (stepIndex === 3) {
       const year = currentPersonForm.targetYear;
@@ -231,8 +231,10 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showForm, showPersonForm, editingPersonIndex, isInitialForm]);
 
-  // Focus input
+  // 스텝 전환 시 스크롤 초기화 + Focus input
   useEffect(() => {
+    // iOS Safari: 키보드로 인해 밀린 스크롤 초기화
+    window.scrollTo(0, 0);
     if (steps[currentStep]?.type === 'text') {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
@@ -570,14 +572,14 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
           {onBackToStart ? (
             <button
               onClick={onBackToStart}
-              className="px-3 py-1.5 rounded-full bg-dark/80 backdrop-blur-xl border border-coral/20 text-cream/85 text-[11px] font-semibold cursor-pointer hover:bg-dark hover:border-coral/40 transition-all flex items-center gap-1"
+              className="px-3 py-1.5 rounded-full bg-dark/80 backdrop-blur-xl border border-coral/20 text-cream/85 text-[11px] font-semibold cursor-pointer hover:bg-dark hover:border-coral/40 transition-all flex items-center gap-1 whitespace-nowrap"
             >
               ← {t.back}
             </button>
           ) : !isInitialForm ? (
             <button
               onClick={() => setShowPersonForm(false)}
-              className="px-3 py-1.5 rounded-full bg-dark/80 backdrop-blur-xl border border-coral/20 text-cream/85 text-[11px] font-semibold cursor-pointer hover:bg-dark hover:border-coral/40 transition-all flex items-center gap-1"
+              className="px-3 py-1.5 rounded-full bg-dark/80 backdrop-blur-xl border border-coral/20 text-cream/85 text-[11px] font-semibold cursor-pointer hover:bg-dark hover:border-coral/40 transition-all flex items-center gap-1 whitespace-nowrap"
             >
               <X size={14} /> {t.close}
             </button>
@@ -586,12 +588,12 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
           )}
 
           {/* Progress dots - 중앙 */}
-          <div className="flex gap-1.5 bg-dark/80 backdrop-blur-xl px-3 py-2 rounded-full border border-coral/20">
+          <div className="flex gap-1 bg-dark/80 backdrop-blur-xl px-2.5 py-2 rounded-full border border-coral/20">
             {steps.map((_, i) => (
               <div
                 key={i}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
-                  i < currentStep ? 'w-5 bg-coral' : i === currentStep ? 'w-5 bg-coral/60' : 'w-2 bg-white/20'
+                  i < currentStep ? 'w-3 bg-coral' : i === currentStep ? 'w-3 bg-coral/60' : 'w-1.5 bg-white/20'
                 }`}
               />
             ))}
@@ -625,8 +627,17 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
           <div
             className={`w-full max-w-md transition-all duration-200 ${isAnimating ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
           >
+            {/* 진행 격려 메시지 */}
+            {currentStep >= 4 && currentStep < steps.length && (
+              <p className="text-center text-sm mb-4 animate-fade-in" style={{
+                color: currentStep >= 9 ? 'rgba(255, 193, 122, 0.8)' : 'rgba(255, 140, 105, 0.6)',
+              }}>
+                {currentStep >= 9 ? '거의 다 왔어요! ✨' : currentStep >= 6 ? '벌써 절반이나 왔어요 👏' : '잘하고 있어요!'}
+              </p>
+            )}
+
             {/* Question */}
-            <h2 className="text-2xl font-medium text-cream mb-8 leading-relaxed text-center">
+            <h2 className="text-xl font-medium text-cream mb-8 leading-relaxed text-center">
               {getQuestionText(currentStep)}
             </h2>
 
@@ -806,14 +817,15 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
 
         <style>{`
           @keyframes formFadeIn {
-            from {
-              opacity: 0;
-              transform: translateY(20px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          .animate-fade-in {
+            animation: fadeInDown 0.5s ease-out;
+          }
+          @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
           }
         `}</style>
       </div>

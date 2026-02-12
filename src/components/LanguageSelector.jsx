@@ -1,8 +1,21 @@
-import React, { memo } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 
 const LanguageSelector = memo(function LanguageSelector() {
   const { language, setLanguage } = useApp();
+  const [hideByScroll, setHideByScroll] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollBottom = window.innerHeight + window.scrollY;
+      const pageHeight = document.documentElement.scrollHeight;
+      setHideByScroll(scrollBottom > pageHeight - 100);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  if (hideByScroll) return null;
 
   const languages = [
     { code: 'ko', label: '한' },

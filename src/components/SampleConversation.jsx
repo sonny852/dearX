@@ -68,7 +68,7 @@ const SampleConversation = memo(function SampleConversation({ onComplete }) {
                 )}
 
                 <div
-                  className={`max-w-[75%] px-3.5 py-2.5 text-sm leading-relaxed ${
+                  className={`max-w-[85%] px-3.5 py-2.5 text-sm leading-relaxed ${
                     msg.role === 'user'
                       ? 'bg-coral text-white rounded-2xl rounded-br-md'
                       : 'bg-white/10 text-cream rounded-2xl rounded-bl-md'

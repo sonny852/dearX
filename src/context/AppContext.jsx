@@ -179,6 +179,60 @@ export function AppProvider({ children }) {
                   habits: p.habits,
                 })));
               }
+              // 로그인 전 대화 복원
+              try {
+                const pendingChatRaw = localStorage.getItem('dearx_pending_chat');
+                if (pendingChatRaw) {
+                  localStorage.removeItem('dearx_pending_chat');
+                  const pendingChat = JSON.parse(pendingChatRaw);
+                  if (pendingChat.person && pendingChat.messages?.length > 0) {
+                    const person = pendingChat.person;
+
+                    // MBTI 트레이트 조합
+                    const mbtiTraits = [person.mbtiEI, person.mbtiSN, person.mbtiTF, person.mbtiJP]
+                      .filter(Boolean).join(', ');
+                    const personality = mbtiTraits || person.personality;
+
+                    // DB에 person 저장
+                    const personData = {
+                      relationship: person.relationship,
+                      name: person.name,
+                      photo_url: person.photo,
+                      target_age: parseInt(person.targetAge),
+                      target_year: person.targetYear ? parseInt(person.targetYear) : null,
+                      gender: person.gender,
+                      time_direction: person.timeDirection,
+                      my_nickname: person.myNickname,
+                      personality: personality,
+                      speech_style: person.speechStyle,
+                      hobbies: person.hobbies,
+                      memories: person.memories,
+                      favorite_words: person.favoriteWords,
+                      habits: person.habits,
+                    };
+                    const { data: savedData } = await db.addPerson(session.user.id, personData);
+                    if (savedData) {
+                      const restoredPerson = { ...person, id: savedData.id };
+                      setAdditionalPeople(prev => [...prev, restoredPerson]);
+                      setActivePerson(restoredPerson);
+                      setMessages(pendingChat.messages);
+                      setMessageCount(pendingChat.messageCount || 0);
+                      setShowChat(true);
+
+                      // 대화 메시지들 DB에 저장
+                      for (const msg of pendingChat.messages) {
+                        await db.saveMessage(session.user.id, savedData.id, {
+                          role: msg.role,
+                          content: msg.content,
+                          image_url: msg.imageUrl || null,
+                        });
+                      }
+                    }
+                  }
+                }
+              } catch (e) {
+                // 복원 실패 무시
+              }
             } catch (error) {
               // DB fetch 에러 - 무시 (세션은 이미 복원됨)
             } finally {
@@ -531,6 +585,15 @@ export function AppProvider({ children }) {
       if (!authUser) {
         setPendingPaymentAfterLogin(true);
         setShowLoginRequired(true);
+        // 현재 대화를 localStorage에 저장 (로그인 후 복원용)
+        try {
+          const pendingChat = {
+            person: activePerson,
+            messages: messages,
+            messageCount: messageCount,
+          };
+          localStorage.setItem('dearx_pending_chat', JSON.stringify(pendingChat));
+        } catch (e) { /* 저장 실패 무시 */ }
       } else {
         setShowPaymentPopup(true);
       }

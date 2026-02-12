@@ -65,10 +65,10 @@ export const translations = {
     sampleMsg1: '우리 아들 오랜만이야 잘 지냈어?',
     sampleMsg2: '엄마 보고 싶었어',
     sampleMsg3: '나도 보고 싶었어. 밥은 먹었니?',
-    sampleMsg4: '웅 엄마가 끓여준 된장찌개 먹고 싶다',
+    sampleMsg4: '엄마가 끓여준 된장찌개 먹고 싶다',
     sampleMsg5: '다음에 또 해줄게 우리 아들 사랑해 ❤️',
     sampleMsg6: '나도 사랑해 엄마 보고싶어 ❤️',
-    readyToMeet: '{{year}}년의 {{relationship}}을(를) 만날 준비가 됐어요',
+    readyToMeet: '{{year}}년의 {{relationship}}, 만날 준비 됐어요',
     // 캡처/공유
     captureChat: '대화 캡처',
     download: '저장',
@@ -143,7 +143,7 @@ export const translations = {
     stepQuestion3: '언제의 모습을 만나고 싶으세요?',
     stepQuestion4: '나이와 성별을 알려주세요',
     stepQuestion5: '사진이 있으시면 올려주세요',
-    stepQuestion6: '함께한 추억이나 기억나는 것이 있나요?',
+    stepQuestion6: '함께한 추억이 있나요?',
     stepHint1: '예: 할머니, 아버지, 친구, 선생님...',
     pastDesc: '그때 그 시절의 모습',
     futureDesc: '미래의 모습',
@@ -163,8 +163,8 @@ export const translations = {
     dashboardSubtitle: '누구와 대화하고 싶으세요?',
     ageUnit: '세',
     // Guest notice
-    guestNotice: '회원 정보가 저장되지 않아 대화 내용이 정확하지 않을 수 있어요',
-    guestNoticeLogin: '로그인하면 더 자연스러운 대화가 가능합니다',
+    guestNotice: '로그인하면 대화가 저장돼요',
+    guestNoticeLogin: '더 자연스러운 대화가 가능합니다',
     // MyPage
     profileTab: '내 정보',
     subscriptionTab: '구독 관리',
