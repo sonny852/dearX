@@ -209,7 +209,7 @@ const ChatInterface = memo(function ChatInterface() {
 
       {/* Messages */}
       <div
-        className="flex-1 overflow-y-auto p-4 md:p-8"
+        className="flex-1 overflow-y-auto p-4"
         style={{
           background: 'radial-gradient(circle at 20% 30%, rgba(255, 140, 105, 0.04) 0%, transparent 50%)',
         }}
@@ -245,7 +245,7 @@ const ChatInterface = memo(function ChatInterface() {
             return (
             <div
               key={i}
-              className={`message-bubble mb-4 md:mb-8 flex ${captureSelectMode ? 'cursor-pointer' : ''}`}
+              className={`message-bubble mb-4 flex ${captureSelectMode ? 'cursor-pointer' : ''}`}
               style={{
                 justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
                 ...(shouldAnimate
@@ -255,7 +255,7 @@ const ChatInterface = memo(function ChatInterface() {
               onClick={() => handleMessageSelect(i)}
             >
               <div
-                className={`max-w-[80%] md:max-w-[70%] p-3 md:p-6 transition-all ${
+                className={`max-w-[80%] p-3 transition-all ${
                   msg.role === 'user'
                     ? 'rounded-3xl rounded-br-sm bg-gradient-to-br from-coral to-coral-dark shadow-lg shadow-coral/30'
                     : 'rounded-3xl rounded-bl-sm bg-dark-card border border-coral/30 shadow-lg shadow-black/30'
@@ -273,7 +273,7 @@ const ChatInterface = memo(function ChatInterface() {
                   </div>
                 )}
                 <p
-                  className={`m-0 text-sm md:text-lg leading-relaxed ${
+                  className={`m-0 text-sm leading-relaxed ${
                     msg.role === 'user' ? 'text-white' : 'text-cream'
                   }`}
                 >
@@ -311,7 +311,7 @@ const ChatInterface = memo(function ChatInterface() {
       </div>
 
       {/* Input / Selection Mode */}
-      <div className="p-3 md:p-8 border-t border-coral/20 bg-gradient-to-t from-dark/95 to-dark/80">
+      <div className="p-3 border-t border-coral/20 bg-gradient-to-t from-dark/95 to-dark/80">
         <div className="max-w-[900px] mx-auto">
           {/* 캡처 선택 모드 액션 바 */}
           {captureSelectMode ? (
@@ -405,7 +405,7 @@ const ChatInterface = memo(function ChatInterface() {
               onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
               onFocus={() => setShowPlusMenu(false)}
               placeholder={t.sendMessage}
-              className="flex-1 min-w-0 px-4 md:px-6 py-3 md:py-4 text-sm md:text-lg bg-dark-card border border-coral/30 rounded-full text-cream outline-none focus:border-coral/60 transition-colors"
+              className="flex-1 min-w-0 px-4 py-3 text-sm bg-dark-card border border-coral/30 rounded-full text-cream outline-none focus:border-coral/60 transition-colors"
             />
             <button
               onClick={sendMessage}
