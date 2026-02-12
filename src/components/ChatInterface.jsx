@@ -279,12 +279,13 @@ const ChatInterface = memo(function ChatInterface() {
 
       {/* Messages */}
       <div
-        className="flex-1 overflow-y-auto p-4"
+        className="flex-1 overflow-y-auto p-4 flex flex-col"
         style={{
           background: 'radial-gradient(circle at 20% 30%, rgba(255, 140, 105, 0.04) 0%, transparent 50%)',
         }}
       >
-        <div className="max-w-[900px] mx-auto min-h-full flex flex-col justify-end">
+        <div className="max-w-[900px] mx-auto w-full flex-1" />
+        <div className="max-w-[900px] mx-auto w-full">
           {/* 비로그인 사용자 알림 */}
           {!authUser && (
             <div className="mb-6 p-4 bg-coral/10 border border-coral/30 rounded-2xl text-center">
