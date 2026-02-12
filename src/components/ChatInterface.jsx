@@ -151,7 +151,7 @@ const ChatInterface = memo(function ChatInterface() {
 
       if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({
-          text: '그리운 사람의 편지가 왔어요 ✉️',
+          text: '그리운 사람의 편지가 왔어요 💌',
           files: [file],
         });
       }
@@ -600,7 +600,7 @@ const ChatInterface = memo(function ChatInterface() {
                     color: '#4a3728',
                     marginBottom: '4px',
                   }}>
-                    ✉️ To. {activePerson?.name}
+                    To. {activePerson?.name} 💌
                   </p>
                   <p style={{
                     fontFamily: 'Georgia, "Noto Serif KR", serif',
