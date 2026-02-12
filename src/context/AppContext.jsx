@@ -146,7 +146,8 @@ export function AppProvider({ children }) {
                   setPendingPaymentAfterLogin(false);
                   setShowPaymentPopup(true);
                 }
-              } else if (!profile) {
+              } else {
+                // 프로필이 없거나 이름이 없으면 첫 로그인 → 정보 입력
                 setPendingAuthUser({
                   id: session.user.id,
                   email: session.user.email,
@@ -287,11 +288,23 @@ export function AppProvider({ children }) {
   const handleFileUpload = useCallback((e, target) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCurrentPersonForm((prev) => ({ ...prev, photo: reader.result }));
+      const img = new Image();
+      img.onload = () => {
+        const MAX_SIZE = 800;
+        let { width, height } = img;
+        if (width > MAX_SIZE || height > MAX_SIZE) {
+          const ratio = Math.min(MAX_SIZE / width, MAX_SIZE / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        const resized = canvas.toDataURL('image/jpeg', 0.8);
+        setCurrentPersonForm((prev) => ({ ...prev, photo: resized }));
       };
-      reader.readAsDataURL(file);
+      img.src = URL.createObjectURL(file);
     }
   }, []);
 

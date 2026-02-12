@@ -33,12 +33,23 @@ const MyPage = memo(function MyPage() {
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // TODO: 실제 이미지 업로드 구현
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        handleUpdateProfile({ photo: reader.result });
+      const img = new Image();
+      img.onload = () => {
+        const MAX_SIZE = 800;
+        let { width, height } = img;
+        if (width > MAX_SIZE || height > MAX_SIZE) {
+          const ratio = Math.min(MAX_SIZE / width, MAX_SIZE / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        const resized = canvas.toDataURL('image/jpeg', 0.8);
+        handleUpdateProfile({ photo: resized });
       };
-      reader.readAsDataURL(file);
+      img.src = URL.createObjectURL(file);
     }
   };
 
