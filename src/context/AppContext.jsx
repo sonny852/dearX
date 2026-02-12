@@ -140,6 +140,7 @@ export function AppProvider({ children }) {
                   name: profile.name,
                   gender: profile.gender || null,
                   birthYear: profile.birth_year || null,
+                  mbti: profile.mbti || null,
                   isPremium: profile?.is_premium || false,
                   premiumExpiresAt: profile?.premium_expires_at,
                 });
@@ -331,15 +332,31 @@ export function AppProvider({ children }) {
   const handleUpdateProfile = useCallback(async (updates) => {
     if (!authUser) return;
 
+    // DB 컬럼명 ↔ 로컬 상태명 매핑
+    const dbUpdates = {};
+    const localUpdates = {};
+    for (const [key, value] of Object.entries(updates)) {
+      if (key === 'birthYear') {
+        dbUpdates.birth_year = value;
+        localUpdates.birthYear = value;
+      } else if (key === 'birth_year') {
+        dbUpdates.birth_year = value;
+        localUpdates.birthYear = value;
+      } else {
+        dbUpdates[key] = value;
+        localUpdates[key] = value;
+      }
+    }
+
     // DB에 저장
     if (supabase) {
-      await db.updateProfile(authUser.id, updates);
+      await db.updateProfile(authUser.id, dbUpdates);
     }
 
     // authUser 상태 업데이트
     setAuthUser(prev => ({
       ...prev,
-      ...updates,
+      ...localUpdates,
     }));
   }, [authUser]);
 
@@ -642,6 +659,7 @@ export function AppProvider({ children }) {
           userName: authUser?.name || 'User',
           userGender: authUser?.gender || null,
           userBirthYear: authUser?.birthYear || null,
+          userMbti: authUser?.mbti || null,
           language: language, // ko, en, ja
         };
 

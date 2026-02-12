@@ -176,7 +176,7 @@ function getCallName(relationship: string): string {
   return callNames[relationship] || '너';
 }
 
-function buildSystemPrompt(person: Person, userName: string, language: string = 'ko', userGender?: string, userAge?: number): string {
+function buildSystemPrompt(person: Person, userName: string, language: string = 'ko', userGender?: string, userAge?: number, userMbti?: string): string {
   // 언어별 응답 지시
   const languageInstruction = {
     ko: '',
@@ -238,6 +238,7 @@ function buildSystemPrompt(person: Person, userName: string, language: string = 
 - 너와 대화하는 사람: ${relationship === 'self' ? `${person.currentAge}살의 나 자신` : userName}
 ${userAge ? `- ${userName}의 나이: ${userAge}세` : ''}
 ${userGender ? `- ${userName}의 성별: ${userGender === 'male' ? '남성' : '여성'}` : ''}
+${userMbti ? `- ${userName}의 성격: ${userMbti}` : ''}
 ${relationship !== 'self' ? `- ${userName}은(는) 너의 입장에서 "${userCallName}"야.` : ''}
 ${selfContext}
 
@@ -295,6 +296,19 @@ ${selfContext}
     prompt += `- 가족 구성: ${person.family}\n`;
   }
 
+  // 사용자 MBTI에 맞춘 대화 스타일
+  if (userMbti) {
+    prompt += `\n## ${userName}의 성격 (대화할 때 참고해!)
+${userName}은(는) "${userMbti}" 스타일이야.
+- "분위기 메이커"면 → 밝고 장난스럽게 대화해도 OK
+- "조용히 지켜보는 편"이면 → 차분하고 편안하게 대화해
+- "해결책부터 알려줌"이면 → 논리적으로 대화해도 좋아
+- "일단 공감부터"면 → 감정에 공감하면서 대화해
+- "미리미리 준비"면 → 계획적인 이야기에 맞장구쳐줘
+- "그때그때 즉흥으로"면 → 자유롭고 유연하게 대화해
+이 성격에 맞춰서 자연스럽게 반응해줘!\n`;
+  }
+
   // 성별과 나이에 따른 말투 스타일
   let speechStyleGuide = '';
   if (person.targetAge <= 7) {
@@ -336,7 +350,7 @@ serve(async (req) => {
       throw new Error('ANTHROPIC_API_KEY not configured (DearX-API-KEY secret missing)');
     }
 
-    const { person, messages, userName, userGender, userBirthYear, language = 'ko' } = await req.json();
+    const { person, messages, userName, userGender, userBirthYear, userMbti, language = 'ko' } = await req.json();
 
     if (!person || !messages || !userName) {
       throw new Error('Missing required fields: person, messages, userName');
@@ -344,7 +358,7 @@ serve(async (req) => {
 
     // 사용자 나이 계산
     const userAge = userBirthYear ? (new Date().getFullYear() - userBirthYear) : undefined;
-    const systemPrompt = buildSystemPrompt(person, userName, language, userGender, userAge);
+    const systemPrompt = buildSystemPrompt(person, userName, language, userGender, userAge, userMbti);
 
     // 마지막 사용자 메시지 확인
     const lastUserMessage = messages[messages.length - 1]?.content || '';

@@ -12,22 +12,47 @@ const MyPage = memo(function MyPage() {
     t,
   } = useApp();
 
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [newName, setNewName] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({});
   const [activeTab, setActiveTab] = useState('profile'); // profile, subscription
 
   if (!showMyPage || !authUser) return null;
 
-  const handleStartEditName = () => {
-    setNewName(authUser.name);
-    setIsEditingName(true);
+  const handleStartEdit = () => {
+    // 기존 MBTI 문자열에서 개별 값 복원
+    const mbti = authUser.mbti || '';
+    const mbtiParts = mbti.split(', ').filter(Boolean);
+    const mbtiEI = mbtiParts.find(p => p === '분위기 메이커' || p === '조용히 지켜보는 편') || '';
+    const mbtiSN = mbtiParts.find(p => p === '어제 뭐 먹었는지도 기억함' || p === '갑자기 엉뚱한 말 나옴') || '';
+    const mbtiTF = mbtiParts.find(p => p === '해결책부터 알려줌' || p === '일단 공감부터') || '';
+    const mbtiJP = mbtiParts.find(p => p === '미리미리 준비' || p === '그때그때 즉흥으로') || '';
+
+    setEditForm({
+      name: authUser.name || '',
+      gender: authUser.gender || '',
+      birthYear: authUser.birthYear || '',
+      mbtiEI,
+      mbtiSN,
+      mbtiTF,
+      mbtiJP,
+    });
+    setIsEditing(true);
   };
 
-  const handleSaveName = async () => {
-    if (newName.trim() && newName !== authUser.name) {
-      await handleUpdateProfile({ name: newName.trim() });
+  const handleSaveProfile = async () => {
+    const updates = {};
+    if (editForm.name.trim() && editForm.name !== authUser.name) updates.name = editForm.name.trim();
+    if (editForm.gender !== (authUser.gender || '')) updates.gender = editForm.gender || null;
+    if (String(editForm.birthYear) !== String(authUser.birthYear || '')) updates.birthYear = editForm.birthYear ? parseInt(editForm.birthYear) : null;
+
+    // MBTI 조합
+    const mbtiTraits = [editForm.mbtiEI, editForm.mbtiSN, editForm.mbtiTF, editForm.mbtiJP].filter(Boolean).join(', ');
+    if (mbtiTraits !== (authUser.mbti || '')) updates.mbti = mbtiTraits || null;
+
+    if (Object.keys(updates).length > 0) {
+      await handleUpdateProfile(updates);
     }
-    setIsEditingName(false);
+    setIsEditing(false);
   };
 
   const handlePhotoUpload = (e) => {
@@ -143,53 +168,190 @@ const MyPage = memo(function MyPage() {
                 </div>
               </div>
 
-              {/* Name */}
-              <div className="bg-dark/50 rounded-2xl p-4">
-                <label className="block text-cream/50 text-xs mb-2">
-                  {t.name || '이름'}
-                </label>
-                {isEditingName ? (
-                  <div className="flex items-center gap-2">
+              {isEditing ? (
+                <>
+                  {/* Name - 수정 */}
+                  <div className="bg-dark/50 rounded-2xl p-4">
+                    <label className="block text-cream/50 text-xs mb-2">
+                      {t.name || '이름'}
+                    </label>
                     <input
                       type="text"
-                      value={newName}
-                      onChange={(e) => setNewName(e.target.value)}
-                      className="flex-1 bg-transparent border-b border-coral/30 text-cream text-lg outline-none focus:border-coral py-1"
+                      value={editForm.name}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full bg-transparent border-b border-coral/30 text-cream text-lg outline-none focus:border-coral py-1"
                       autoFocus
                     />
-                    <button
-                      onClick={handleSaveName}
-                      className="w-10 h-10 rounded-full bg-coral/20 flex items-center justify-center text-coral hover:bg-coral/30 transition-colors"
-                    >
-                      <Check size={18} />
-                    </button>
-                    <button
-                      onClick={() => setIsEditingName(false)}
-                      className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-cream/50 hover:text-cream transition-colors"
-                    >
-                      <X size={18} />
-                    </button>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-between">
-                    <span className="text-cream text-lg">{authUser.name}</span>
-                    <button
-                      onClick={handleStartEditName}
-                      className="w-10 h-10 rounded-full bg-coral/10 flex items-center justify-center text-coral/60 hover:text-coral transition-colors"
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                  </div>
-                )}
-              </div>
 
-              {/* Email */}
-              <div className="bg-dark/50 rounded-2xl p-4">
-                <label className="block text-cream/50 text-xs mb-2">
-                  {t.email || '이메일'}
-                </label>
-                <span className="text-cream/70">{authUser.email}</span>
-              </div>
+                  {/* Gender - 수정 */}
+                  <div className="bg-dark/50 rounded-2xl p-4">
+                    <label className="block text-cream/50 text-xs mb-2">
+                      {t.gender || '성별'}
+                    </label>
+                    <div className="flex gap-2">
+                      {[
+                        { value: 'male', label: t.male || '남성' },
+                        { value: 'female', label: t.female || '여성' },
+                      ].map((opt) => (
+                        <button
+                          key={opt.value}
+                          onClick={() => setEditForm(prev => ({ ...prev, gender: prev.gender === opt.value ? '' : opt.value }))}
+                          className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                            editForm.gender === opt.value
+                              ? 'bg-coral text-white'
+                              : 'bg-white/5 text-cream/70 hover:bg-white/10'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Birth Year - 수정 */}
+                  <div className="bg-dark/50 rounded-2xl p-4">
+                    <label className="block text-cream/50 text-xs mb-2">
+                      {t.birthYear || '출생연도'}
+                    </label>
+                    <input
+                      type="number"
+                      value={editForm.birthYear}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, birthYear: e.target.value }))}
+                      placeholder="예: 1990"
+                      className="w-full bg-transparent border-b border-coral/30 text-cream text-lg outline-none focus:border-coral py-1"
+                    />
+                  </div>
+
+                  {/* MBTI 성격 - 수정 (선택) */}
+                  <div className="bg-dark/50 rounded-2xl p-4">
+                    <label className="block text-cream/50 text-xs mb-3">
+                      나의 성격 (선택)
+                    </label>
+                    <div className="space-y-3">
+                      {[
+                        { key: 'mbtiEI', label: '사람들과 있을 때', choices: [
+                          { value: '분위기 메이커', emoji: '🎉' },
+                          { value: '조용히 지켜보는 편', emoji: '☕' },
+                        ]},
+                        { key: 'mbtiSN', label: '이야기 스타일', choices: [
+                          { value: '어제 뭐 먹었는지도 기억함', emoji: '📋' },
+                          { value: '갑자기 엉뚱한 말 나옴', emoji: '🌀' },
+                        ]},
+                        { key: 'mbtiTF', label: '고민 상담하면', choices: [
+                          { value: '해결책부터 알려줌', emoji: '🔧' },
+                          { value: '일단 공감부터', emoji: '🤗' },
+                        ]},
+                        { key: 'mbtiJP', label: '약속/계획', choices: [
+                          { value: '미리미리 준비', emoji: '📅' },
+                          { value: '그때그때 즉흥으로', emoji: '🎲' },
+                        ]},
+                      ].map((item) => (
+                        <div key={item.key}>
+                          <p className="text-cream/40 text-xs mb-1.5">{item.label}</p>
+                          <div className="flex gap-2">
+                            {item.choices.map((choice) => (
+                              <button
+                                key={choice.value}
+                                onClick={() => setEditForm(prev => ({ ...prev, [item.key]: prev[item.key] === choice.value ? '' : choice.value }))}
+                                className={`flex-1 py-2 px-2 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-1 ${
+                                  editForm[item.key] === choice.value
+                                    ? 'bg-coral text-white'
+                                    : 'bg-white/5 text-cream/70 hover:bg-white/10'
+                                }`}
+                              >
+                                <span>{choice.emoji}</span>
+                                <span>{choice.value}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Email - 읽기 전용 */}
+                  <div className="bg-dark/50 rounded-2xl p-4">
+                    <label className="block text-cream/50 text-xs mb-2">
+                      {t.email || '이메일'}
+                    </label>
+                    <span className="text-cream/40">{authUser.email}</span>
+                  </div>
+
+                  {/* 저장 / 취소 버튼 */}
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setIsEditing(false)}
+                      className="flex-1 py-3 rounded-xl border border-coral/30 text-cream/70 text-sm font-medium hover:bg-white/5 transition-colors"
+                    >
+                      {t.cancel || '취소'}
+                    </button>
+                    <button
+                      onClick={handleSaveProfile}
+                      className="flex-1 py-3 rounded-xl bg-coral text-white text-sm font-medium hover:bg-coral-dark transition-colors"
+                    >
+                      {t.save || '저장'}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Name - 보기 */}
+                  <div className="bg-dark/50 rounded-2xl p-4">
+                    <label className="block text-cream/50 text-xs mb-2">
+                      {t.name || '이름'}
+                    </label>
+                    <span className="text-cream text-lg">{authUser.name}</span>
+                  </div>
+
+                  {/* Gender - 보기 */}
+                  <div className="bg-dark/50 rounded-2xl p-4">
+                    <label className="block text-cream/50 text-xs mb-2">
+                      {t.gender || '성별'}
+                    </label>
+                    <span className="text-cream/70">
+                      {authUser.gender === 'male' ? (t.male || '남성') : authUser.gender === 'female' ? (t.female || '여성') : (t.notSet || '미설정')}
+                    </span>
+                  </div>
+
+                  {/* Birth Year - 보기 */}
+                  <div className="bg-dark/50 rounded-2xl p-4">
+                    <label className="block text-cream/50 text-xs mb-2">
+                      {t.birthYear || '출생연도'}
+                    </label>
+                    <span className="text-cream/70">
+                      {authUser.birthYear ? `${authUser.birthYear}년` : (t.notSet || '미설정')}
+                    </span>
+                  </div>
+
+                  {/* MBTI - 보기 */}
+                  <div className="bg-dark/50 rounded-2xl p-4">
+                    <label className="block text-cream/50 text-xs mb-2">
+                      나의 성격
+                    </label>
+                    <span className="text-cream/70">
+                      {authUser.mbti || (t.notSet || '미설정')}
+                    </span>
+                  </div>
+
+                  {/* Email - 보기 */}
+                  <div className="bg-dark/50 rounded-2xl p-4">
+                    <label className="block text-cream/50 text-xs mb-2">
+                      {t.email || '이메일'}
+                    </label>
+                    <span className="text-cream/70">{authUser.email}</span>
+                  </div>
+
+                  {/* 수정 버튼 */}
+                  <button
+                    onClick={handleStartEdit}
+                    className="w-full py-3 rounded-xl border border-coral/30 text-coral text-sm font-medium hover:bg-coral/10 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Edit2 size={16} />
+                    {t.editProfile || '프로필 수정'}
+                  </button>
+                </>
+              )}
             </div>
           )}
 
