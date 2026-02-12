@@ -152,7 +152,7 @@ const ChatInterface = memo(function ChatInterface() {
       if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({
           title: 'DearX - 그리움을 만나다',
-          text: '소중한 대화를 공유합니다',
+          text: '그리운 사람의 편지가 왔어요',
           files: [file],
         });
       }
