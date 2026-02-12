@@ -517,6 +517,48 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
             </div>
           </div>
 
+          {/* MBTI 성격 4문항 */}
+          {[
+            { key: 'mbtiEI', label: '사람들과 있을 때', choices: [
+              { value: '분위기 메이커', label: '분위기 메이커', emoji: '🎉' },
+              { value: '조용히 지켜보는 편', label: '조용히 지켜보는 편', emoji: '☕' },
+            ]},
+            { key: 'mbtiSN', label: '이야기 스타일', choices: [
+              { value: '어제 뭐 먹었는지도 기억함', label: '어제 뭐 먹었는지도 기억함', emoji: '📋' },
+              { value: '갑자기 엉뚱한 말 나옴', label: '갑자기 엉뚱한 말 나옴', emoji: '🌀' },
+            ]},
+            { key: 'mbtiTF', label: '고민 상담하면', choices: [
+              { value: '해결책부터 알려줌', label: '해결책부터 알려줌', emoji: '🔧' },
+              { value: '일단 공감부터', label: '일단 공감부터', emoji: '🤗' },
+            ]},
+            { key: 'mbtiJP', label: '약속/계획 스타일', choices: [
+              { value: '미리미리 준비', label: '미리미리 준비', emoji: '📅' },
+              { value: '그때그때 즉흥으로', label: '그때그때 즉흥으로', emoji: '🎲' },
+            ]},
+          ].map((item) => (
+            <div key={item.key} className="bg-dark-card/50 rounded-2xl p-4">
+              <label className="block text-cream/50 text-xs mb-2">
+                {item.label} ({t.photoOptional || '선택'})
+              </label>
+              <div className="flex gap-2">
+                {item.choices.map((choice) => (
+                  <button
+                    key={choice.value}
+                    onClick={() => setCurrentPersonForm(prev => ({ ...prev, [item.key]: prev[item.key] === choice.value ? '' : choice.value }))}
+                    className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
+                      currentPersonForm[item.key] === choice.value
+                        ? 'bg-coral text-white'
+                        : 'bg-white/5 text-cream/70 hover:bg-white/10'
+                    }`}
+                  >
+                    <span>{choice.emoji}</span>
+                    <span className="text-xs">{choice.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+
           {/* 나를 부르는 호칭 */}
           <div className="bg-dark-card/50 rounded-2xl p-4">
             <label className="block text-cream/50 text-xs mb-2">
@@ -680,6 +722,13 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
                   {currentStep > 0 ? (
                     <button
                       onClick={goToPrevStep}
+                      className="w-12 h-12 rounded-full flex items-center justify-center bg-white/10 text-cream/50 hover:text-cream hover:bg-white/20 transition-all"
+                    >
+                      ←
+                    </button>
+                  ) : onBackToStart ? (
+                    <button
+                      onClick={onBackToStart}
                       className="w-12 h-12 rounded-full flex items-center justify-center bg-white/10 text-cream/50 hover:text-cream hover:bg-white/20 transition-all"
                     >
                       ←

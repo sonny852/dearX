@@ -122,6 +122,13 @@ function AppContent() {
   // 로그인 + 등록된 사람이 있으면 대시보드 표시
   const showDashboard = authUser && additionalPeople.length > 0;
 
+  // 대시보드 표시되면 showForm 리셋 (로그인 시 people 로드 전 showForm=true가 된 경우)
+  useEffect(() => {
+    if (showDashboard && showForm) {
+      setShowForm(false);
+    }
+  }, [showDashboard, showForm, setShowForm]);
+
   // 로그인했지만 등록된 사람이 없으면 바로 폼으로 (히어로/샘플대화 스킵)
   const isLoggedInWithoutPeople = authUser && additionalPeople.length === 0;
 
@@ -276,7 +283,7 @@ function AppContent() {
             isInitialForm={true}
             onBackToStart={() => {
               setShowForm(false);
-              setStage('hero');
+              setStage('conversation');
             }}
           />
         </div>

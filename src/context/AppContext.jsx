@@ -343,9 +343,9 @@ export function AppProvider({ children }) {
     }));
   }, [authUser]);
 
-  const handleFileUpload = useCallback((e, target) => {
-    const file = e.target.files[0];
-    if (file) {
+  // 이미지 리사이즈 유틸 (max 800px, JPEG 0.8)
+  const resizeImage = useCallback((file) => {
+    return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
         const MAX_SIZE = 800;
@@ -359,12 +359,20 @@ export function AppProvider({ children }) {
         canvas.width = width;
         canvas.height = height;
         canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-        const resized = canvas.toDataURL('image/jpeg', 0.8);
-        setCurrentPersonForm((prev) => ({ ...prev, photo: resized }));
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
       };
       img.src = URL.createObjectURL(file);
-    }
+    });
   }, []);
+
+  const handleFileUpload = useCallback((e, target) => {
+    const file = e.target.files[0];
+    if (file) {
+      resizeImage(file).then((resized) => {
+        setCurrentPersonForm((prev) => ({ ...prev, photo: resized }));
+      });
+    }
+  }, [resizeImage]);
 
   const handleAddNewPerson = useCallback(() => {
     if (!authUser) {
@@ -576,8 +584,8 @@ export function AppProvider({ children }) {
   }, [authUser]);
 
   // 메시지 전송 (Claude API 연동)
-  const sendMessage = useCallback(async () => {
-    if (!input.trim() || !activePerson) return;
+  const sendMessage = useCallback(async (imageUrl) => {
+    if ((!input.trim() && !imageUrl) || !activePerson) return;
 
     // Check message limit for non-premium users
     if (!authUser?.isPremium && messageCount >= FREE_MESSAGE_LIMIT) {
@@ -602,7 +610,8 @@ export function AppProvider({ children }) {
 
     const userMessage = {
       role: 'user',
-      content: input,
+      content: input || '(사진)',
+      imageUrl: imageUrl || null,
       timestamp: new Date()
         .toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })
         .replace(/\. /g, '.')
@@ -617,7 +626,7 @@ export function AppProvider({ children }) {
 
     // 사용자 메시지 DB 저장
     if (supabase && authUser && activePerson?.id) {
-      db.saveMessage(authUser.id, activePerson.id, { role: 'user', content: input });
+      db.saveMessage(authUser.id, activePerson.id, { role: 'user', content: input || '(사진)', image_url: imageUrl || null });
     }
 
     // API 호출
@@ -628,6 +637,7 @@ export function AppProvider({ children }) {
           messages: [...messages, userMessage].map(m => ({
             role: m.role,
             content: m.content,
+            imageUrl: m.imageUrl || null,
           })),
           userName: authUser?.name || 'User',
           userGender: authUser?.gender || null,
@@ -783,6 +793,7 @@ export function AppProvider({ children }) {
       handleSaveName,
       handleUpdateProfile,
       handleFileUpload,
+      resizeImage,
       handleAddNewPerson,
       handleEditPerson,
       handleDeletePerson,
@@ -819,6 +830,7 @@ export function AppProvider({ children }) {
       handleSaveName,
       handleUpdateProfile,
       handleFileUpload,
+      resizeImage,
       handleAddNewPerson,
       handleEditPerson,
       handleDeletePerson,

@@ -46,6 +46,7 @@ interface Person {
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  imageUrl?: string | null;
 }
 
 // 사진 요청 감지
@@ -378,10 +379,29 @@ serve(async (req) => {
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 200,
         system: finalSystemPrompt,
-        messages: messages.map((m: Message) => ({
-          role: m.role,
-          content: m.content,
-        })),
+        messages: messages.map((m: Message) => {
+          // 이미지가 있는 메시지는 content block 형식으로 변환
+          if (m.imageUrl && m.role === 'user') {
+            const base64Match = m.imageUrl.match(/^data:(image\/\w+);base64,(.+)$/);
+            if (base64Match) {
+              return {
+                role: m.role,
+                content: [
+                  {
+                    type: 'image',
+                    source: {
+                      type: 'base64',
+                      media_type: base64Match[1],
+                      data: base64Match[2],
+                    },
+                  },
+                  { type: 'text', text: m.content || '(사진)' },
+                ],
+              };
+            }
+          }
+          return { role: m.role, content: m.content };
+        }),
       }),
     });
 

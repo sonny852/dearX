@@ -12,8 +12,11 @@ const AuthBar = memo(function AuthBar() {
     const handleScroll = () => {
       const scrollBottom = window.innerHeight + window.scrollY;
       const pageHeight = document.documentElement.scrollHeight;
-      setHideByScroll(scrollBottom > pageHeight - 100);
+      // 스크롤이 없는 짧은 페이지에서는 숨기지 않음
+      const hasScroll = pageHeight > window.innerHeight + 50;
+      setHideByScroll(hasScroll && scrollBottom > pageHeight - 100);
     };
+    handleScroll(); // 초기 로드 시 체크
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);

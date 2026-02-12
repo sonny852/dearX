@@ -1,8 +1,9 @@
 import React, { memo, useRef, useEffect, useState, useCallback } from 'react';
-import { Send, Clock, X, Home, Share2, Download, Camera, Plus } from 'lucide-react';
+import { Send, Clock, X, Home, Share2, Download, Camera, Plus, Image as ImageIcon } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import html2canvas from 'html2canvas';
 import { useApp } from '../context/AppContext';
+import { auth } from '../lib/supabase';
 
 const ChatInterface = memo(function ChatInterface() {
   const {
@@ -20,6 +21,7 @@ const ChatInterface = memo(function ChatInterface() {
     showLoginRequired,
     setShowLoginRequired,
     handleLogin,
+    resizeImage,
     t,
   } = useApp();
 
@@ -30,9 +32,23 @@ const ChatInterface = memo(function ChatInterface() {
   const [captureSelectMode, setCaptureSelectMode] = useState(false);
   const [captureRange, setCaptureRange] = useState({ start: null, end: null });
   const [captureStyle, setCaptureStyle] = useState('letter');
+  const [attachedImage, setAttachedImage] = useState(null); // 첨부된 이미지 base64
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [googleAuthUrl, setGoogleAuthUrl] = useState(null);
   const captureRef = useRef(null);
   const messagesEndRef = useRef(null);
   const containerRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  // 로그인 모달 열리면 Google OAuth URL 미리 생성
+  useEffect(() => {
+    if (showLoginModal) {
+      auth.getAuthUrl('google').then(url => {
+        if (url) setGoogleAuthUrl(url);
+      });
+    }
+    return () => setGoogleAuthUrl(null);
+  }, [showLoginModal]);
 
   // iOS Safari 키보드 대응: visualViewport 추적
   useEffect(() => {
@@ -93,6 +109,23 @@ const ChatInterface = memo(function ChatInterface() {
     }
   }, [showPlusMenu]);
 
+  // 사진 첨부 핸들러
+  const handleAttachImage = useCallback(async (e) => {
+    const file = e.target.files[0];
+    if (file && resizeImage) {
+      const resized = await resizeImage(file);
+      setAttachedImage(resized);
+    }
+    // input 초기화 (같은 파일 재선택 가능하게)
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, [resizeImage]);
+
+  // 사진 포함 전송
+  const handleSendWithImage = useCallback(() => {
+    sendMessage(attachedImage || undefined);
+    setAttachedImage(null);
+  }, [sendMessage, attachedImage]);
+
   // 메시지 선택 핸들러
   const handleMessageSelect = useCallback((index) => {
     if (!captureSelectMode) return;
@@ -133,9 +166,9 @@ const ChatInterface = memo(function ChatInterface() {
       // 약간의 딜레이 후 캡처 (렌더링 대기)
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      const bgColors = { letter: '#faf3e8', night: '#0a0e27', default: '#1a1a2e' };
+      const bgColors = { letter: '#faf3e8', night: '#0a0e27' };
       const canvas = await html2canvas(captureRef.current, {
-        backgroundColor: bgColors[captureStyle] || '#1a1a2e',
+        backgroundColor: bgColors[captureStyle] || '#0a0e27',
         scale: 2,
         useCORS: true,
         allowTaint: true,
@@ -230,6 +263,14 @@ const ChatInterface = memo(function ChatInterface() {
             >
               {t.back}
             </button>
+            {!authUser && (
+              <button
+                onClick={() => setShowLoginModal(true)}
+                className="px-3 py-2 bg-dark-card border border-coral/30 rounded-xl text-cream cursor-pointer text-xs hover:bg-coral/10 transition-colors"
+              >
+                {t.login || '로그인'}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -377,6 +418,22 @@ const ChatInterface = memo(function ChatInterface() {
             </div>
           ) : (
             <>
+              {/* 첨부 이미지 미리보기 */}
+              {attachedImage && (
+                <div className="mb-3 relative inline-block">
+                  <img
+                    src={attachedImage}
+                    alt="Attached"
+                    className="w-20 h-20 object-cover rounded-xl border border-coral/30"
+                  />
+                  <button
+                    onClick={() => setAttachedImage(null)}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-dark-card border border-coral/30 rounded-full flex items-center justify-center text-coral hover:bg-coral/20 transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
               {/* Free message counter for non-premium users */}
               {!authUser?.isPremium && remainingFreeMessages > 0 && (
                 <div className="text-center mb-3">
@@ -405,6 +462,18 @@ const ChatInterface = memo(function ChatInterface() {
                   className="absolute bottom-full left-0 mb-2 bg-dark-card border border-coral/30 rounded-2xl shadow-xl shadow-black/50 overflow-hidden min-w-[140px]"
                   onClick={(e) => e.stopPropagation()}
                 >
+                  {/* 사진 첨부 */}
+                  <button
+                    onClick={() => {
+                      setShowPlusMenu(false);
+                      fileInputRef.current?.click();
+                    }}
+                    className="w-full px-4 py-3 flex items-center gap-3 text-cream hover:bg-coral/10 transition-colors"
+                  >
+                    <ImageIcon size={18} className="text-coral" />
+                    <span className="text-sm">{t.attachPhoto || '사진 첨부'}</span>
+                  </button>
+                  {/* 대화 캡처 */}
                   <button
                     onClick={() => {
                       setShowPlusMenu(false);
@@ -423,22 +492,30 @@ const ChatInterface = memo(function ChatInterface() {
                   </button>
                 </div>
               )}
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAttachImage}
+                className="hidden"
+              />
             </div>
 
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+              onKeyPress={(e) => e.key === 'Enter' && handleSendWithImage()}
               onFocus={() => setShowPlusMenu(false)}
               placeholder={t.sendMessage}
               className="flex-1 min-w-0 px-4 py-3 text-sm bg-dark-card border border-coral/30 rounded-full text-cream outline-none focus:border-coral/60 transition-colors"
             />
             <button
-              onClick={sendMessage}
-              disabled={!input.trim()}
+              onClick={handleSendWithImage}
+              disabled={!input.trim() && !attachedImage}
               className={`p-4 w-12 h-12 rounded-full border-none flex items-center justify-center transition-all ${
-                input.trim()
+                input.trim() || attachedImage
                   ? 'bg-gradient-to-br from-coral to-coral-dark cursor-pointer shadow-lg shadow-coral/40'
                   : 'bg-coral/20 cursor-not-allowed'
               }`}
@@ -514,6 +591,57 @@ const ChatInterface = memo(function ChatInterface() {
         </div>
       )}
 
+      {/* Login Modal */}
+      {showLoginModal && (
+        <div
+          className="fixed inset-0 z-[3000] flex items-end sm:items-center justify-center"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowLoginModal(false); }}
+        >
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div className="relative w-full max-w-[420px] bg-dark-card border border-coral/15 rounded-t-3xl sm:rounded-3xl p-10 pt-12 animate-slide-up">
+            <button
+              onClick={() => setShowLoginModal(false)}
+              className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center text-cream/50 hover:text-cream hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+            <h2
+              className="text-4xl font-display font-black text-center mb-2 bg-gradient-to-br from-white via-coral to-gold bg-clip-text"
+              style={{ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
+            >
+              DearX
+            </h2>
+            <p className="text-center text-cream/50 text-sm mb-10">
+              {t.loginSubtitle}
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => { if (googleAuthUrl) window.location.href = googleAuthUrl; }}
+                disabled={!googleAuthUrl}
+                className="w-full h-[54px] rounded-2xl bg-white text-[#333] text-[15px] font-semibold flex items-center justify-center gap-3 cursor-pointer border-none hover:brightness-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <img alt="" src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" />
+                {t.continueWithGoogle}
+              </button>
+              <button
+                onClick={() => alert(t.comingSoonMessage || '연동 예정입니다')}
+                className="w-full h-[54px] rounded-2xl bg-[#FEE500] text-[#191919] text-[15px] font-semibold flex items-center justify-center gap-3 cursor-pointer border-none hover:brightness-95 transition-all"
+              >
+                <img alt="" src="https://upload.wikimedia.org/wikipedia/commons/e/e3/KakaoTalk_logo.svg" className="w-5 h-5" />
+                {t.continueWithKakao}
+              </button>
+              <button
+                onClick={() => alert(t.comingSoonMessage || '연동 예정입니다')}
+                className="w-full h-[54px] rounded-2xl bg-[#03C75A] text-white text-[15px] font-semibold flex items-center justify-center gap-3 cursor-pointer border-none hover:brightness-95 transition-all"
+              >
+                <span className="w-5 h-5 flex items-center justify-center text-white font-bold text-sm">N</span>
+                {t.continueWithNaver || '네이버로 계속하기'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Capture Modal */}
       {showCaptureModal && (
         <div className="fixed inset-0 z-[400] flex flex-col bg-black/80 backdrop-blur-sm">
@@ -536,7 +664,6 @@ const ChatInterface = memo(function ChatInterface() {
               {[
                 { id: 'letter', label: '편지', bg: '#faf3e8', border: '#d4a574', text: '#4a3728' },
                 { id: 'night', label: '밤하늘', bg: 'linear-gradient(135deg, #0a0e27, #1a0a2e)', border: '#a78bba', text: '#ffc17a' },
-                { id: 'default', label: '기본', bg: 'linear-gradient(135deg, #1a1a2e, #16162a)', border: 'rgba(255,140,105,0.3)', text: '#ff8c69' },
               ].map((style) => (
                 <button
                   key={style.id}
@@ -606,9 +733,7 @@ const ChatInterface = memo(function ChatInterface() {
         <div ref={captureRef} className="w-[420px]" style={{
           background: captureStyle === 'letter'
             ? '#faf3e8'
-            : captureStyle === 'night'
-              ? 'linear-gradient(180deg, #0a0e27, #1a0a2e, #0d1117)'
-              : 'linear-gradient(180deg, #1a1a2e, #16162a)',
+            : 'linear-gradient(180deg, #0a0e27, #1a0a2e, #0d1117)',
         }}>
 
           {/* ===== 편지 스타일 (Letter) ===== */}
@@ -833,76 +958,6 @@ const ChatInterface = memo(function ChatInterface() {
             </>
           )}
 
-          {/* ===== 기본 스타일 (Default) ===== */}
-          {captureStyle === 'default' && (
-            <>
-              {/* 대화 헤더 */}
-              <div className="px-6 py-5 bg-gradient-to-r from-coral/20 to-gold/10 border-b border-coral/30">
-                <div className="flex items-center gap-4">
-                  <div
-                    className="w-14 h-14 rounded-full border-2 border-coral/50 shadow-lg shadow-coral/20 flex-shrink-0"
-                    style={{
-                      background: (activePerson?.currentPhoto || activePerson?.photo)
-                        ? `url(${activePerson.currentPhoto || activePerson.photo}) center/cover`
-                        : 'linear-gradient(135deg, rgba(255, 140, 105, 0.4) 0%, rgba(255, 193, 122, 0.4) 100%)',
-                    }}
-                  />
-                  <div>
-                    <p className="text-coral font-display font-bold text-xl">{activePerson?.name}</p>
-                    <p className="text-cream/50 text-sm mt-1" style={{ fontFamily: 'system-ui, sans-serif' }}>
-                      그리운 {activePerson?.name} · {activePerson?.targetAge}{t.ageUnit}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* 메시지들 */}
-              <div className="px-6 py-5">
-                <div className="space-y-5">
-                  {messagesToCapture.map((msg, i) => (
-                    <div
-                      key={i}
-                      className={`${msg.role === 'user' ? 'text-right' : 'text-left'}`}
-                    >
-                      <p
-                        className={`text-[15px] leading-relaxed ${
-                          msg.role === 'user' ? 'text-coral' : 'text-cream'
-                        }`}
-                        style={{ wordBreak: 'keep-all' }}
-                      >
-                        {msg.content}
-                      </p>
-                      <span className="text-xs text-cream/30 mt-1 inline-block">
-                        {msg.timestamp}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* 브랜딩 푸터 */}
-              <div style={{
-                padding: '12px 24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                background: '#12121f',
-              }}>
-                <table style={{ borderCollapse: 'collapse' }}><tbody><tr>
-                  <td style={{ verticalAlign: 'middle', paddingRight: '12px' }}>
-                    <img src="/favicon.png" alt="DearX" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
-                  </td>
-                  <td style={{ verticalAlign: 'middle' }}>
-                    <span style={{ fontSize: '14px', color: '#ff8c69', fontWeight: 'bold', display: 'block', lineHeight: 1.2 }}>그리움을 만나다</span>
-                    <span style={{ fontSize: '11px', color: 'rgba(245,230,211,0.6)', display: 'block', lineHeight: 1.2 }}>DearX</span>
-                  </td>
-                </tr></tbody></table>
-                <div style={{ background: 'white', padding: '4px', borderRadius: '8px' }}>
-                  <QRCodeSVG value="https://dearx.io" size={48} />
-                </div>
-              </div>
-            </>
-          )}
 
         </div>
       </div>
