@@ -70,6 +70,10 @@ export function AppProvider({ children }) {
     gender: '',
     timeDirection: 'past',
     myNickname: '',
+    mbtiEI: '',
+    mbtiSN: '',
+    mbtiTF: '',
+    mbtiJP: '',
     personality: '',
     speechStyle: '',
     hobbies: '',
@@ -325,6 +329,10 @@ export function AppProvider({ children }) {
       gender: '',
       timeDirection: 'past',
       myNickname: '',
+      mbtiEI: '',
+      mbtiSN: '',
+      mbtiTF: '',
+      mbtiJP: '',
       personality: '',
       speechStyle: '',
       hobbies: '',
@@ -362,6 +370,15 @@ export function AppProvider({ children }) {
       return;
     }
 
+    // MBTI 트레이트 조합
+    const mbtiTraits = [
+      currentPersonForm.mbtiEI,
+      currentPersonForm.mbtiSN,
+      currentPersonForm.mbtiTF,
+      currentPersonForm.mbtiJP,
+    ].filter(Boolean).join(', ');
+    const personality = mbtiTraits || currentPersonForm.personality;
+
     // Supabase에 저장
     if (supabase && authUser) {
       const personData = {
@@ -371,7 +388,7 @@ export function AppProvider({ children }) {
         target_age: parseInt(currentPersonForm.targetAge),
         gender: currentPersonForm.gender,
         time_direction: currentPersonForm.timeDirection,
-        personality: currentPersonForm.personality,
+        personality: personality,
         speech_style: currentPersonForm.speechStyle,
         hobbies: currentPersonForm.hobbies,
         memories: currentPersonForm.memories,
@@ -415,6 +432,15 @@ export function AppProvider({ children }) {
 
     // 새로운 사람이면 (ID가 없으면) DB에 저장
     if (!person.id && authUser) {
+      // MBTI 트레이트 조합
+      const mbtiTraits = [
+        person.mbtiEI,
+        person.mbtiSN,
+        person.mbtiTF,
+        person.mbtiJP,
+      ].filter(Boolean).join(', ');
+      const personality = mbtiTraits || person.personality;
+
       const personData = {
         relationship: person.relationship,
         name: person.name,
@@ -424,7 +450,7 @@ export function AppProvider({ children }) {
         gender: person.gender,
         time_direction: person.timeDirection,
         my_nickname: person.myNickname,
-        personality: person.personality,
+        personality: personality,
         speech_style: person.speechStyle,
         hobbies: person.hobbies,
         memories: person.memories,

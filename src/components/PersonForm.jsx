@@ -115,6 +115,46 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
       ]
     },
     {
+      key: 'mbtiEI',
+      question: '',
+      type: 'choice',
+      optional: true,
+      choices: [
+        { value: '분위기 메이커', label: '분위기 메이커', emoji: '🎉' },
+        { value: '조용히 지켜보는 편', label: '조용히 지켜보는 편', emoji: '☕' },
+      ]
+    },
+    {
+      key: 'mbtiSN',
+      question: '',
+      type: 'choice',
+      optional: true,
+      choices: [
+        { value: '어제 뭐 먹었는지도 기억함', label: '어제 뭐 먹었는지도 기억함', emoji: '📋' },
+        { value: '갑자기 엉뚱한 말 나옴', label: '갑자기 엉뚱한 말 나옴', emoji: '🌀' },
+      ]
+    },
+    {
+      key: 'mbtiTF',
+      question: '',
+      type: 'choice',
+      optional: true,
+      choices: [
+        { value: '해결책부터 알려줌', label: '해결책부터 알려줌', emoji: '🔧' },
+        { value: '일단 공감부터', label: '일단 공감부터', emoji: '🤗' },
+      ]
+    },
+    {
+      key: 'mbtiJP',
+      question: '',
+      type: 'choice',
+      optional: true,
+      choices: [
+        { value: '미리미리 준비', label: '미리미리 준비', emoji: '📅' },
+        { value: '그때그때 즉흥으로', label: '그때그때 즉흥으로', emoji: '🎲' },
+      ]
+    },
+    {
       key: 'myNickname',
       question: '', // Will be dynamic
       placeholder: '예: 우리 아들, 막내야, 철수야...',
@@ -139,6 +179,7 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
   const getQuestionText = (stepIndex) => {
     const step = steps[stepIndex];
     const rel = currentPersonForm.relationship;
+    const name = currentPersonForm.name;
 
     if (stepIndex === 1) {
       return rel ? `${rel}의 이름은 무엇인가요?` : '이름을 알려주세요';
@@ -154,11 +195,24 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
       return rel ? `그때 ${rel}은(는) 몇 살이었나요?` : '그때 몇 살이었나요?';
     }
     if (stepIndex === 4) {
-      const name = currentPersonForm.name;
       if (name) return `${name}의 성별을 알려주세요`;
       return rel ? `${rel}의 성별을 알려주세요` : '성별을 알려주세요';
     }
+    // MBTI 4문항 (stepIndex 5~8)
     if (stepIndex === 5) {
+      return name ? `${name}은(는) 사람들과 있을 때?` : '사람들과 있을 때 어떤 편인가요?';
+    }
+    if (stepIndex === 6) {
+      return name ? `${name}이(가) 이야기할 때?` : '이야기할 때 어떤 스타일인가요?';
+    }
+    if (stepIndex === 7) {
+      return name ? `${name}에게 고민 상담을 하면?` : '고민 상담을 하면 어떤 편인가요?';
+    }
+    if (stepIndex === 8) {
+      return name ? `${name}의 약속이나 계획은?` : '약속이나 계획 스타일은?';
+    }
+    // myNickname (stepIndex 9)
+    if (stepIndex === 9) {
       return rel ? `${rel}이(가) 나를 뭐라고 불렀나요?` : '상대방이 나를 뭐라고 불렀나요?';
     }
     return step.question;
@@ -676,7 +730,16 @@ const PersonForm = memo(function PersonForm({ isInitialForm = false, onBackToSta
                   ) : (
                     <div className="w-12" />
                   )}
-                  <div />
+                  {currentStepData.optional ? (
+                    <button
+                      onClick={handleSkip}
+                      className="text-cream/40 text-sm hover:text-cream/60 transition-colors"
+                    >
+                      건너뛰기
+                    </button>
+                  ) : (
+                    <div />
+                  )}
                   <div className="w-12" />
                 </div>
               </div>

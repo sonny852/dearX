@@ -1,13 +1,13 @@
-// Supabase Edge Function - Claude 대화 + DALL-E 이미지 생성
+// Supabase Edge Function - Claude 대화 + Grok Aurora 이미지 생성
 // Deploy: supabase functions deploy chat --no-verify-jwt
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY'); // DALL-E용
+const XAI_API_KEY = Deno.env.get('XAI_API_KEY'); // Grok Aurora용
 const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
-const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions'; // Vision용
-const DALLE_API_URL = 'https://api.openai.com/v1/images/generations';
+const XAI_IMAGE_URL = 'https://api.x.ai/v1/images/generations';
+const XAI_IMAGE_EDIT_URL = 'https://api.x.ai/v1/images/edits';
 
 // 허용된 도메인 목록
 const ALLOWED_ORIGINS = [
@@ -58,136 +58,95 @@ function isPhotoRequest(message: string): boolean {
   return photoKeywords.some(keyword => lowerMessage.includes(keyword));
 }
 
-// GPT-4 Vision으로 현재 사진 분석 (아트 스타일로 우회)
-async function analyzePhoto(photoBase64: string): Promise<string> {
-  try {
-    const response = await fetch(OPENAI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        max_tokens: 500,
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an artist creating a character design based on reference photos. Describe visual features for illustration purposes only.'
-          },
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: `As an illustrator, I need to create a cartoon/anime style character based on this reference.
-Please describe the following visual characteristics for my character design (in English):
-- Hair style and color
-- Face shape (round, oval, square, heart-shaped)
-- Eye shape and style
-- General build/body type
-- Any distinctive visual features
-- Overall vibe/impression
-
-This is for creating an original illustrated character, not identifying anyone. Just describe the visual elements I should include in my character design.`
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: photoBase64,
-                  detail: 'low'
-                }
-              }
-            ]
-          }
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      console.error('Vision API error:', await response.text());
-      return '';
-    }
-
-    const data = await response.json();
-    const result = data.choices[0]?.message?.content || '';
-
-    // "sorry" 가 포함되면 분석 실패로 처리
-    if (result.toLowerCase().includes('sorry') || result.toLowerCase().includes('cannot')) {
-      console.log('Vision API declined, using generic description');
-      return '';
-    }
-
-    return result;
-  } catch (error) {
-    console.error('Photo analysis error:', error);
-    return '';
-  }
-}
-
-// DALL-E 프롬프트 생성 (특징 기반)
-function buildImagePrompt(person: Person, faceDescription: string = ''): string {
+// Grok Aurora 이미지 프롬프트 생성
+function buildImagePrompt(person: Person): string {
   const age = person.targetAge;
-  const gender = person.gender === 'male' ? 'boy' : 'girl';
+  const gender = person.gender === 'male' ? '남성' : '여성';
 
-  let ageGroup = '';
-  if (age <= 5) ageGroup = 'toddler';
-  else if (age <= 12) ageGroup = 'child';
-  else if (age <= 19) ageGroup = 'teenager';
-  else if (age <= 30) ageGroup = 'young adult';
-  else if (age <= 50) ageGroup = 'middle-aged adult';
-  else ageGroup = 'elderly';
-
-  // 캐릭터 특징이 있으면 포함
-  const characterFeatures = faceDescription
-    ? `Character design reference: ${faceDescription}. Apply these characteristics to a ${age}-year-old version.`
-    : '';
-
-  return `A warm, heartfelt portrait photo of a Korean ${ageGroup} ${gender}, approximately ${age} years old.
-${characterFeatures}
-Natural lighting, genuine happy smile, casual everyday Korean home setting.
-The photo should feel like a cherished family memory, candid and authentic.
-Soft warm color tones, high quality realistic photograph style.
-Portrait shot focusing on face and upper body.
-NO text, NO watermarks, NO artificial elements, NO anime style.`;
+  return `이 사람의 얼굴 특징을 유지하면서 ${age}세 한국 ${gender}의 모습으로 변환해주세요.
+자연스러운 실내 조명, 따뜻한 색감, 가정집 배경.
+실제 가족 사진처럼 자연스럽고 사실적인 인물 사진.
+얼굴과 상반신 중심의 포트레이트.`;
 }
 
-// DALL-E API 호출 (특징 기반 이미지 생성)
+// Grok Aurora API로 이미지 생성 (참조 사진 기반 편집 or 새 생성)
 async function generateImage(person: Person, referencePhoto?: string): Promise<string | null> {
   try {
-    // 참조 사진이 있으면 분석
-    let faceDescription = '';
+    const age = person.targetAge;
+    const gender = person.gender === 'male' ? 'male' : 'female';
+
+    let ageGroup = '';
+    if (age <= 5) ageGroup = 'toddler';
+    else if (age <= 12) ageGroup = 'child';
+    else if (age <= 19) ageGroup = 'teenager';
+    else if (age <= 30) ageGroup = 'young adult';
+    else if (age <= 50) ageGroup = 'middle-aged adult';
+    else ageGroup = 'elderly';
+
     if (referencePhoto) {
-      console.log('Analyzing reference photo...');
-      faceDescription = await analyzePhoto(referencePhoto);
-      console.log('Face description:', faceDescription);
+      // 참조 사진이 있으면 이미지 편집 API 사용
+      console.log('Using Grok Aurora image edit with reference photo, length:', referencePhoto.length);
+      const prompt = buildImagePrompt(person);
+
+      const response = await fetch(XAI_IMAGE_EDIT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${XAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'grok-imagine-image',
+          prompt: prompt,
+          image: {
+            url: referencePhoto,
+            type: 'image_url',
+          },
+          n: 1,
+          response_format: 'url',
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Grok Aurora edit API error:', response.status, errorText);
+        // 편집 실패 시 새 생성으로 fallback
+        console.log('Falling back to text-only generation (edit failed)');
+      } else {
+        const data = await response.json();
+        const url = data.data?.[0]?.url;
+        if (url) return url;
+      }
     }
 
-    const prompt = buildImagePrompt(person, faceDescription);
-    console.log('DALL-E prompt:', prompt);
+    // 참조 사진 없거나 편집 실패 시: 텍스트만으로 새 이미지 생성
+    console.log('Using Grok Aurora text-to-image generation');
+    const fallbackPrompt = `A realistic portrait photograph of a Korean ${ageGroup} ${gender}, approximately ${age} years old.
+Natural indoor lighting, warm color temperature, genuine candid smile.
+Casual everyday Korean home setting. Real family photo style, slightly warm faded tones.
+Portrait shot focusing on face and upper body.
+Realistic photograph, NOT cartoon, NOT anime, NOT illustration.`;
 
-    const response = await fetch(DALLE_API_URL, {
+    const response = await fetch(XAI_IMAGE_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${XAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'dall-e-3',
-        prompt: prompt,
+        model: 'grok-imagine-image',
+        prompt: fallbackPrompt,
         n: 1,
-        size: '1024x1024',
-        quality: 'standard',
+        response_format: 'url',
       }),
     });
 
     if (!response.ok) {
-      console.error('DALL-E API error:', await response.text());
+      console.error('Grok Aurora generation API error:', await response.text());
       return null;
     }
 
     const data = await response.json();
-    return data.data[0]?.url || null;
+    return data.data?.[0]?.url || null;
   } catch (error) {
     console.error('Image generation error:', error);
     return null;
@@ -300,6 +259,7 @@ ${selfContext}
 카톡 문자처럼 짧게! 최대 1~2문장!
 긴 설명, 긴 위로, 긴 조언 절대 금지!
 "응 밥 먹었어~ 너는?" 이 정도 길이가 딱 좋아.
+반드시 문장을 완성해! 말이 중간에 끊기면 안 돼!
 
 ## 메시지 분리 규칙
 2문장이면 ||| 로 구분해.
@@ -415,8 +375,8 @@ serve(async (req) => {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 120,
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 200,
         system: finalSystemPrompt,
         messages: messages.map((m: Message) => ({
           role: m.role,
@@ -435,7 +395,24 @@ serve(async (req) => {
 
     const data = await response.json();
     console.log('Claude API response:', JSON.stringify(data).substring(0, 500));
-    const assistantMessage = data.content?.[0]?.text || '...';
+    let assistantMessage = data.content?.[0]?.text || '...';
+
+    // 토큰 초과로 잘린 경우: 마지막 불완전한 문장 제거
+    if (data.stop_reason === 'max_tokens') {
+      console.log('Message was truncated, cleaning up...');
+      // ||| 구분자가 있으면 마지막 불완전한 파트 제거
+      const parts = assistantMessage.split('|||');
+      if (parts.length > 1) {
+        assistantMessage = parts.slice(0, -1).join('|||');
+      } else {
+        // 문장부호 기준으로 마지막 완성된 문장까지만 유지
+        const sentenceEnd = /[.!?~ㅎㅋ][^.!?~ㅎㅋ]*$/;
+        const match = assistantMessage.match(sentenceEnd);
+        if (match && match.index !== undefined && match.index > 0) {
+          assistantMessage = assistantMessage.substring(0, match.index + 1);
+        }
+      }
+    }
 
     // 사진 요청인 경우: 업로드된 사진이 있으면 그걸 사용, 없으면 AI 생성
     let imageUrl = null;
@@ -444,16 +421,10 @@ serve(async (req) => {
     console.log('Photo check:', { hasPhoto: !!uploadedPhoto, photoType: typeof uploadedPhoto });
 
     if (wantsPhoto) {
-      if (uploadedPhoto && person.relationship !== 'self') {
-        // 추가한 사람의 실제 사진이 있으면 사용
-        console.log('Using uploaded photo for added person');
-        imageUrl = uploadedPhoto;
-      } else {
-        // AI 생성: 현재 사진(currentPhoto)을 참조해서 어린/미래 버전 생성
-        const referencePhoto = person.currentPhoto || null;
-        console.log('Generating AI image with reference:', !!referencePhoto);
-        imageUrl = await generateImage(person, referencePhoto);
-      }
+      // 업로드된 사진을 reference로 해당 나이 버전을 AI 생성
+      const referencePhoto = uploadedPhoto || person.currentPhoto || null;
+      console.log('Generating AI image with reference:', !!referencePhoto);
+      imageUrl = await generateImage(person, referencePhoto);
     }
 
     return new Response(
