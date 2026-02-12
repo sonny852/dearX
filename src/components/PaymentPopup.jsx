@@ -99,6 +99,7 @@ const PaymentPopup = memo(function PaymentPopup() {
                 <div className="relative p-3 pt-6 bg-dark-card border border-coral/20 rounded-xl hover:border-coral/40 transition-colors cursor-pointer group flex flex-col">
                   <div className="text-center flex-1 flex flex-col">
                     <p className="text-cream/70 text-xs mb-1">{t.priceDay}</p>
+                    <p className="text-cream/40 text-xs line-through mb-0.5">{t.priceDayOriginal}</p>
                     <p className="text-xl font-bold text-coral mb-1">{t.priceDayAmount}</p>
                     <p className="text-cream/50 text-[10px] mb-3 flex-1">{t.priceDayDesc}</p>
                     <button
@@ -120,6 +121,7 @@ const PaymentPopup = memo(function PaymentPopup() {
                   </div>
                   <div className="text-center flex-1 flex flex-col">
                     <p className="text-cream/70 text-xs mb-1">{t.priceWeek}</p>
+                    <p className="text-cream/40 text-xs line-through mb-0.5">{t.priceWeekOriginal}</p>
                     <p className="text-xl font-bold text-coral mb-1">{t.priceWeekAmount}</p>
                     <p className="text-cream/50 text-[10px] mb-3 flex-1">{t.priceWeekDesc}</p>
                     <button
@@ -138,6 +140,7 @@ const PaymentPopup = memo(function PaymentPopup() {
                   </div>
                   <div className="text-center flex-1 flex flex-col">
                     <p className="text-cream/70 text-xs mb-1">{t.priceMonth}</p>
+                    <p className="text-cream/40 text-xs line-through mb-0.5">{t.priceMonthOriginal}</p>
                     <p className="text-xl font-bold text-coral mb-1">{t.priceMonthAmount}</p>
                     <p className="text-cream/50 text-[10px] mb-3 flex-1">{t.priceMonthDesc}</p>
                     <button
