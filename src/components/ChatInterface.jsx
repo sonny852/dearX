@@ -29,6 +29,7 @@ const ChatInterface = memo(function ChatInterface() {
   const [showPlusMenu, setShowPlusMenu] = useState(false);
   const [captureSelectMode, setCaptureSelectMode] = useState(false);
   const [captureRange, setCaptureRange] = useState({ start: null, end: null });
+  const [captureStyle, setCaptureStyle] = useState('letter');
   const captureRef = useRef(null);
   const messagesEndRef = useRef(null);
 
@@ -104,8 +105,9 @@ const ChatInterface = memo(function ChatInterface() {
       // 약간의 딜레이 후 캡처 (렌더링 대기)
       await new Promise(resolve => setTimeout(resolve, 100));
 
+      const bgColors = { letter: '#faf3e8', night: '#0a0e27', default: '#1a1a2e' };
       const canvas = await html2canvas(captureRef.current, {
-        backgroundColor: '#1a1a2e',
+        backgroundColor: bgColors[captureStyle] || '#1a1a2e',
         scale: 2,
         useCORS: true,
         allowTaint: true,
@@ -117,7 +119,15 @@ const ChatInterface = memo(function ChatInterface() {
     } finally {
       setIsCapturing(false);
     }
-  }, [messagesToCapture.length]);
+  }, [messagesToCapture.length, captureStyle]);
+
+  // 스타일 변경 시 자동 재캡처
+  useEffect(() => {
+    if (showCaptureModal && messagesToCapture.length > 0) {
+      handleCapture();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [captureStyle]);
 
   // 이미지 다운로드
   const handleDownload = useCallback(() => {
@@ -145,13 +155,9 @@ const ChatInterface = memo(function ChatInterface() {
           text: '소중한 대화를 공유합니다',
           files: [file],
         });
-      } else {
-        // 공유 API 지원 안 하면 다운로드
-        handleDownload();
       }
     } catch (error) {
-      console.error('Share failed:', error);
-      handleDownload();
+      // 공유 취소/실패 시 아무것도 하지 않음
     }
   }, [capturedImage, handleDownload]);
 
@@ -203,7 +209,7 @@ const ChatInterface = memo(function ChatInterface() {
 
       {/* Messages */}
       <div
-        className="flex-1 overflow-y-auto p-8"
+        className="flex-1 overflow-y-auto p-4 md:p-8"
         style={{
           background: 'radial-gradient(circle at 20% 30%, rgba(255, 140, 105, 0.04) 0%, transparent 50%)',
         }}
@@ -239,7 +245,7 @@ const ChatInterface = memo(function ChatInterface() {
             return (
             <div
               key={i}
-              className={`message-bubble mb-8 flex ${captureSelectMode ? 'cursor-pointer' : ''}`}
+              className={`message-bubble mb-4 md:mb-8 flex ${captureSelectMode ? 'cursor-pointer' : ''}`}
               style={{
                 justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
                 ...(shouldAnimate
@@ -249,7 +255,7 @@ const ChatInterface = memo(function ChatInterface() {
               onClick={() => handleMessageSelect(i)}
             >
               <div
-                className={`max-w-[70%] p-6 transition-all ${
+                className={`max-w-[80%] md:max-w-[70%] p-3 md:p-6 transition-all ${
                   msg.role === 'user'
                     ? 'rounded-3xl rounded-br-sm bg-gradient-to-br from-coral to-coral-dark shadow-lg shadow-coral/30'
                     : 'rounded-3xl rounded-bl-sm bg-dark-card border border-coral/30 shadow-lg shadow-black/30'
@@ -267,7 +273,7 @@ const ChatInterface = memo(function ChatInterface() {
                   </div>
                 )}
                 <p
-                  className={`m-0 text-lg leading-relaxed ${
+                  className={`m-0 text-sm md:text-lg leading-relaxed ${
                     msg.role === 'user' ? 'text-white' : 'text-cream'
                   }`}
                 >
@@ -305,7 +311,7 @@ const ChatInterface = memo(function ChatInterface() {
       </div>
 
       {/* Input / Selection Mode */}
-      <div className="p-8 border-t border-coral/20 bg-gradient-to-t from-dark/95 to-dark/80">
+      <div className="p-3 md:p-8 border-t border-coral/20 bg-gradient-to-t from-dark/95 to-dark/80">
         <div className="max-w-[900px] mx-auto">
           {/* 캡처 선택 모드 액션 바 */}
           {captureSelectMode ? (
@@ -399,7 +405,7 @@ const ChatInterface = memo(function ChatInterface() {
               onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
               onFocus={() => setShowPlusMenu(false)}
               placeholder={t.sendMessage}
-              className="flex-1 px-6 py-4 text-lg bg-dark-card border border-coral/30 rounded-full text-cream outline-none focus:border-coral/60 transition-colors"
+              className="flex-1 min-w-0 px-4 md:px-6 py-3 md:py-4 text-sm md:text-lg bg-dark-card border border-coral/30 rounded-full text-cream outline-none focus:border-coral/60 transition-colors"
             />
             <button
               onClick={sendMessage}
@@ -491,11 +497,43 @@ const ChatInterface = memo(function ChatInterface() {
                 {t.captureChat || '대화 캡처'}
               </h3>
               <button
-                onClick={() => { setShowCaptureModal(false); setCapturedImage(null); setCaptureRange({ start: null, end: null }); }}
+                onClick={() => { setShowCaptureModal(false); setCapturedImage(null); setCaptureRange({ start: null, end: null }); setCaptureStyle('letter'); }}
                 className="w-8 h-8 rounded-full bg-coral/10 flex items-center justify-center text-coral/60 hover:text-coral transition-colors"
               >
                 <X size={18} />
               </button>
+            </div>
+
+            {/* Style Selector */}
+            <div className="px-4 pt-3 flex items-center justify-center gap-3">
+              {[
+                { id: 'letter', label: '편지', bg: '#faf3e8', border: '#d4a574', text: '#4a3728' },
+                { id: 'night', label: '밤하늘', bg: 'linear-gradient(135deg, #0a0e27, #1a0a2e)', border: '#a78bba', text: '#ffc17a' },
+                { id: 'default', label: '기본', bg: 'linear-gradient(135deg, #1a1a2e, #16162a)', border: 'rgba(255,140,105,0.3)', text: '#ff8c69' },
+              ].map((style) => (
+                <button
+                  key={style.id}
+                  onClick={() => setCaptureStyle(style.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 transition-all ${
+                    captureStyle === style.id
+                      ? 'scale-105 shadow-lg'
+                      : 'opacity-60 hover:opacity-90'
+                  }`}
+                  style={{
+                    borderColor: captureStyle === style.id ? style.border : 'rgba(255,255,255,0.1)',
+                    background: 'rgba(255,255,255,0.05)',
+                  }}
+                >
+                  <div
+                    className="w-5 h-5 rounded-full border"
+                    style={{
+                      background: style.bg,
+                      borderColor: style.border,
+                    }}
+                  />
+                  <span className="text-sm text-cream font-medium">{style.label}</span>
+                </button>
+              ))}
             </div>
 
             {/* Capture Preview */}
@@ -536,66 +574,302 @@ const ChatInterface = memo(function ChatInterface() {
         </div>
       )}
 
-      {/* 캡처용 숨겨진 영역 - 항상 렌더링 */}
+      {/* 캡처용 숨겨진 영역 - 스타일별 조건부 렌더링 */}
       <div className="absolute left-[-9999px] top-0">
-        <div ref={captureRef} className="w-[420px] bg-gradient-to-b from-[#1a1a2e] to-[#16162a]">
-          {/* 대화 헤더 */}
-          <div className="px-6 py-5 bg-gradient-to-r from-coral/20 to-gold/10 border-b border-coral/30">
-            <div className="flex items-center gap-4">
-              <div
-                className="w-14 h-14 rounded-full border-2 border-coral/50 shadow-lg shadow-coral/20 flex-shrink-0"
-                style={{
-                  background: (activePerson?.currentPhoto || activePerson?.photo)
-                    ? `url(${activePerson.currentPhoto || activePerson.photo}) center/cover`
-                    : 'linear-gradient(135deg, rgba(255, 140, 105, 0.4) 0%, rgba(255, 193, 122, 0.4) 100%)',
-                }}
-              />
-              <div>
-                <p className="text-coral font-display font-bold text-xl">{activePerson?.name}</p>
-                <p className="text-cream/50 text-sm mt-1" style={{ fontFamily: 'system-ui, sans-serif' }}>
-                  그리운 {activePerson?.name} · {activePerson?.targetAge}{t.ageUnit}
-                </p>
-              </div>
-            </div>
-          </div>
+        <div ref={captureRef} className="w-[420px]" style={{
+          background: captureStyle === 'letter'
+            ? '#faf3e8'
+            : captureStyle === 'night'
+              ? 'linear-gradient(180deg, #0a0e27, #1a0a2e, #0d1117)'
+              : 'linear-gradient(180deg, #1a1a2e, #16162a)',
+        }}>
 
-          {/* 메시지들 */}
-          <div className="px-6 py-5">
-            <div className="space-y-5">
-              {messagesToCapture.map((msg, i) => (
-                <div
-                  key={i}
-                  className={`${msg.role === 'user' ? 'text-right' : 'text-left'}`}
-                >
-                  <p
-                    className={`text-[15px] leading-relaxed ${
-                      msg.role === 'user' ? 'text-coral' : 'text-cream'
-                    }`}
-                    style={{ wordBreak: 'keep-all' }}
-                  >
-                    {msg.content}
+          {/* ===== 편지 스타일 (Letter) ===== */}
+          {captureStyle === 'letter' && (
+            <>
+              {/* 편지 테두리 장식 */}
+              <div style={{
+                borderLeft: '4px solid #d4a574',
+                margin: '0 20px',
+                paddingLeft: '20px',
+              }}>
+                {/* 헤더 */}
+                <div style={{ padding: '28px 0 16px', borderBottom: '1px dashed #d4a574', marginBottom: '16px' }}>
+                  <p style={{
+                    fontFamily: 'Georgia, "Noto Serif KR", serif',
+                    fontSize: '22px',
+                    color: '#4a3728',
+                    marginBottom: '4px',
+                  }}>
+                    To. {activePerson?.name}
                   </p>
-                  <span className="text-xs text-cream/30 mt-1 inline-block">
-                    {msg.timestamp}
-                  </span>
+                  <p style={{
+                    fontFamily: 'Georgia, "Noto Serif KR", serif',
+                    fontSize: '13px',
+                    color: '#8a7560',
+                  }}>
+                    그리운 {activePerson?.name}에게 보내는 편지
+                  </p>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* 브랜딩 푸터 */}
-          <div className="px-6 py-4 bg-[#12121f] flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <img src="/favicon.png" alt="DearX" className="w-12 h-12 object-contain" />
-              <div style={{ marginTop: '-4px' }}>
-                <p className="text-coral font-display font-bold text-lg leading-tight">그리움을 만나다</p>
-                <p className="text-cream/60 text-sm leading-tight">DearX</p>
+                {/* 메시지들 */}
+                <div style={{ padding: '8px 0 20px' }}>
+                  {messagesToCapture.map((msg, i) => (
+                    <div key={i} style={{ marginBottom: '16px' }}>
+                      <p style={{
+                        fontFamily: 'Georgia, "Noto Serif KR", serif',
+                        fontSize: '15px',
+                        lineHeight: '1.8',
+                        color: msg.role === 'user' ? '#6b4c3b' : '#4a3728',
+                        fontWeight: msg.role === 'user' ? '400' : '500',
+                        wordBreak: 'keep-all',
+                        textAlign: msg.role === 'user' ? 'right' : 'left',
+                        margin: 0,
+                      }}>
+                        {msg.content}
+                      </p>
+                      <span style={{
+                        fontSize: '11px',
+                        color: '#b8a08a',
+                        display: 'block',
+                        textAlign: msg.role === 'user' ? 'right' : 'left',
+                        marginTop: '4px',
+                      }}>
+                        {msg.timestamp}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* From 서명 */}
+                <div style={{ padding: '0 0 20px', textAlign: 'right' }}>
+                  <p style={{
+                    fontFamily: 'Georgia, "Noto Serif KR", serif',
+                    fontSize: '16px',
+                    color: '#8a7560',
+                    fontStyle: 'italic',
+                  }}>
+                    From. {authUser?.name || 'DearX'}
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="bg-white p-1.5 rounded-xl shadow-lg">
-              <QRCodeSVG value="https://dearx.io" size={56} />
-            </div>
-          </div>
+
+              {/* 푸터 */}
+              <div style={{
+                padding: '12px 24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderTop: '1px dashed #d4a574',
+                background: '#f5ead8',
+              }}>
+                <table style={{ borderCollapse: 'collapse' }}><tbody><tr>
+                  <td style={{ verticalAlign: 'middle', paddingRight: '12px' }}>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      border: '2px solid #d4a574',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: '#faf3e8',
+                    }}>
+                      <img src="/favicon.png" alt="DearX" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
+                    </div>
+                  </td>
+                  <td style={{ verticalAlign: 'middle' }}>
+                    <span style={{ fontFamily: 'Georgia, serif', fontSize: '14px', color: '#4a3728', fontWeight: 'bold', display: 'block', lineHeight: 1.4 }}>그리움을 만나다</span>
+                    <span style={{ fontSize: '11px', color: '#8a7560', display: 'block', lineHeight: 1.4 }}>DearX</span>
+                  </td>
+                </tr></tbody></table>
+                <div style={{ background: 'white', padding: '4px', borderRadius: '4px', border: '1px solid #d4a574' }}>
+                  <QRCodeSVG value="https://dearx.io" size={48} />
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ===== 밤하늘 스타일 (Night Sky) ===== */}
+          {captureStyle === 'night' && (
+            <>
+              {/* 별 장식 상단 */}
+              <div style={{ position: 'relative', overflow: 'hidden' }}>
+                {/* 별 점들 */}
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '80px', pointerEvents: 'none' }}>
+                  {[
+                    { top: 12, left: 30, size: 2, opacity: 0.8 },
+                    { top: 25, left: 80, size: 3, opacity: 1 },
+                    { top: 8, left: 150, size: 2, opacity: 0.6 },
+                    { top: 35, left: 200, size: 2.5, opacity: 0.9 },
+                    { top: 15, left: 280, size: 2, opacity: 0.7 },
+                    { top: 40, left: 340, size: 3, opacity: 0.8 },
+                    { top: 20, left: 380, size: 2, opacity: 0.5 },
+                    { top: 50, left: 120, size: 1.5, opacity: 0.6 },
+                    { top: 45, left: 260, size: 2, opacity: 0.7 },
+                    { top: 60, left: 50, size: 1.5, opacity: 0.5 },
+                    { top: 55, left: 310, size: 2, opacity: 0.6 },
+                    { top: 10, left: 400, size: 2.5, opacity: 0.8 },
+                  ].map((star, i) => (
+                    <div key={i} style={{
+                      position: 'absolute',
+                      top: `${star.top}px`,
+                      left: `${star.left}px`,
+                      width: `${star.size}px`,
+                      height: `${star.size}px`,
+                      borderRadius: '50%',
+                      background: '#fff',
+                      opacity: star.opacity,
+                    }} />
+                  ))}
+                </div>
+
+                {/* 헤더 */}
+                <div style={{ padding: '28px 24px 16px' }}>
+                  <p style={{
+                    fontSize: '20px',
+                    color: '#ffc17a',
+                    fontWeight: 'bold',
+                    marginBottom: '4px',
+                    margin: 0,
+                  }}>
+                    {activePerson?.name}
+                  </p>
+                  <p style={{
+                    fontSize: '13px',
+                    color: '#a78bba',
+                    margin: 0,
+                    marginTop: '4px',
+                  }}>
+                    별빛 아래 나누는 대화
+                  </p>
+                </div>
+
+                {/* 메시지들 */}
+                <div style={{ padding: '8px 24px 20px' }}>
+                  {messagesToCapture.map((msg, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        marginBottom: '16px',
+                        textAlign: msg.role === 'user' ? 'right' : 'left',
+                      }}
+                    >
+                      <p style={{
+                        fontSize: '15px',
+                        lineHeight: '1.8',
+                        color: msg.role === 'user' ? '#ffc17a' : '#e8dff0',
+                        wordBreak: 'keep-all',
+                        margin: 0,
+                      }}>
+                        {msg.content}
+                      </p>
+                      <span style={{
+                        fontSize: '11px',
+                        color: 'rgba(168, 139, 186, 0.5)',
+                        display: 'block',
+                        marginTop: '4px',
+                      }}>
+                        {msg.timestamp}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 밤하늘 푸터 */}
+              <div style={{
+                padding: '12px 24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderTop: '1px solid rgba(168, 139, 186, 0.2)',
+                background: 'rgba(0, 0, 0, 0.3)',
+              }}>
+                <table style={{ borderCollapse: 'collapse' }}><tbody><tr>
+                  <td style={{ verticalAlign: 'middle', paddingRight: '12px' }}>
+                    <img src="/favicon.png" alt="DearX" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
+                  </td>
+                  <td style={{ verticalAlign: 'middle' }}>
+                    <span style={{ fontSize: '14px', color: '#ffc17a', fontWeight: 'bold', display: 'block', lineHeight: 1.4 }}>그리움을 만나다</span>
+                    <span style={{ fontSize: '11px', color: '#a78bba', display: 'block', lineHeight: 1.4 }}>DearX</span>
+                  </td>
+                </tr></tbody></table>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '20px' }}>🌙</span>
+                  <div style={{ background: 'rgba(255,255,255,0.9)', padding: '4px', borderRadius: '8px' }}>
+                    <QRCodeSVG value="https://dearx.io" size={48} />
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ===== 기본 스타일 (Default) ===== */}
+          {captureStyle === 'default' && (
+            <>
+              {/* 대화 헤더 */}
+              <div className="px-6 py-5 bg-gradient-to-r from-coral/20 to-gold/10 border-b border-coral/30">
+                <div className="flex items-center gap-4">
+                  <div
+                    className="w-14 h-14 rounded-full border-2 border-coral/50 shadow-lg shadow-coral/20 flex-shrink-0"
+                    style={{
+                      background: (activePerson?.currentPhoto || activePerson?.photo)
+                        ? `url(${activePerson.currentPhoto || activePerson.photo}) center/cover`
+                        : 'linear-gradient(135deg, rgba(255, 140, 105, 0.4) 0%, rgba(255, 193, 122, 0.4) 100%)',
+                    }}
+                  />
+                  <div>
+                    <p className="text-coral font-display font-bold text-xl">{activePerson?.name}</p>
+                    <p className="text-cream/50 text-sm mt-1" style={{ fontFamily: 'system-ui, sans-serif' }}>
+                      그리운 {activePerson?.name} · {activePerson?.targetAge}{t.ageUnit}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 메시지들 */}
+              <div className="px-6 py-5">
+                <div className="space-y-5">
+                  {messagesToCapture.map((msg, i) => (
+                    <div
+                      key={i}
+                      className={`${msg.role === 'user' ? 'text-right' : 'text-left'}`}
+                    >
+                      <p
+                        className={`text-[15px] leading-relaxed ${
+                          msg.role === 'user' ? 'text-coral' : 'text-cream'
+                        }`}
+                        style={{ wordBreak: 'keep-all' }}
+                      >
+                        {msg.content}
+                      </p>
+                      <span className="text-xs text-cream/30 mt-1 inline-block">
+                        {msg.timestamp}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 브랜딩 푸터 */}
+              <div className="px-6 py-4 bg-[#12121f] flex items-center justify-between">
+                <table style={{ borderCollapse: 'collapse' }}><tbody><tr>
+                  <td style={{ verticalAlign: 'middle', paddingRight: '16px' }}>
+                    <img src="/favicon.png" alt="DearX" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
+                  </td>
+                  <td style={{ verticalAlign: 'middle' }}>
+                    <span className="text-coral font-display font-bold text-lg leading-tight block">그리움을 만나다</span>
+                    <span className="text-cream/60 text-sm leading-tight block">DearX</span>
+                  </td>
+                </tr></tbody></table>
+                <div className="bg-white p-1.5 rounded-xl shadow-lg">
+                  <QRCodeSVG value="https://dearx.io" size={56} />
+                </div>
+              </div>
+            </>
+          )}
+
         </div>
       </div>
 
