@@ -159,7 +159,7 @@ const ChatInterface = memo(function ChatInterface() {
     } catch (error) {
       // 공유 취소/실패 시 아무것도 하지 않음
     }
-  }, [capturedImage, handleDownload]);
+  }, [capturedImage]);
 
   if (!activePerson) return null;
 
