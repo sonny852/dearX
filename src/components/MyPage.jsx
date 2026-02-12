@@ -1,5 +1,5 @@
 import React, { memo, useState } from 'react';
-import { X, User, CreditCard, Edit2, Camera, Check } from 'lucide-react';
+import { X, User, CreditCard, Edit2, Camera } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 const MyPage = memo(function MyPage() {
