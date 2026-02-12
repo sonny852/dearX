@@ -489,10 +489,10 @@ const ChatInterface = memo(function ChatInterface() {
 
       {/* Capture Modal */}
       {showCaptureModal && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-          <div className="relative w-full max-w-[500px] bg-dark-card rounded-3xl border border-coral/20 overflow-hidden my-4">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b border-coral/20">
+        <div className="fixed inset-0 z-[400] flex flex-col bg-black/80 backdrop-blur-sm">
+          <div className="relative w-full max-w-[500px] mx-auto bg-dark-card flex flex-col" style={{ maxHeight: '100dvh' }}>
+            {/* Modal Header - 고정 */}
+            <div className="flex items-center justify-between p-4 border-b border-coral/20 flex-shrink-0">
               <h3 className="text-lg font-display font-bold text-coral">
                 {t.captureChat || '대화 캡처'}
               </h3>
@@ -504,8 +504,8 @@ const ChatInterface = memo(function ChatInterface() {
               </button>
             </div>
 
-            {/* Style Selector */}
-            <div className="px-4 pt-3 flex items-center justify-center gap-3">
+            {/* Style Selector - 고정 */}
+            <div className="px-4 pt-3 pb-2 flex items-center justify-center gap-3 flex-shrink-0">
               {[
                 { id: 'letter', label: '편지', bg: '#faf3e8', border: '#d4a574', text: '#4a3728' },
                 { id: 'night', label: '밤하늘', bg: 'linear-gradient(135deg, #0a0e27, #1a0a2e)', border: '#a78bba', text: '#ffc17a' },
@@ -536,8 +536,8 @@ const ChatInterface = memo(function ChatInterface() {
               ))}
             </div>
 
-            {/* Capture Preview */}
-            <div className="p-4">
+            {/* Capture Preview - 스크롤 영역 */}
+            <div className="p-4 flex-1 overflow-y-auto">
               {isCapturing ? (
                 <div className="flex items-center justify-center py-20">
                   <div className="flex gap-1">
@@ -551,9 +551,9 @@ const ChatInterface = memo(function ChatInterface() {
               ) : null}
             </div>
 
-            {/* Action Buttons */}
+            {/* Action Buttons - 하단 고정 */}
             {capturedImage && (
-              <div className="p-4 border-t border-coral/20 flex gap-3">
+              <div className="p-4 border-t border-coral/20 flex gap-3 flex-shrink-0">
                 <button
                   onClick={handleDownload}
                   className="flex-1 py-3 bg-coral/20 border border-coral/30 rounded-xl text-coral font-medium flex items-center justify-center gap-2 hover:bg-coral/30 transition-colors"
