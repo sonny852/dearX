@@ -63,6 +63,8 @@ const ChatInterface = memo(function ChatInterface() {
           containerRef.current.style.height = `${viewport.height}px`;
           containerRef.current.style.transform = `translateY(${viewport.offsetTop}px)`;
         }
+        // 키보드 올라올 때 마지막 메시지로 스크롤
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       });
     };
 
