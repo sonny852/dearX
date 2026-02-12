@@ -214,7 +214,6 @@ const ChatInterface = memo(function ChatInterface() {
 
       if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({
-          text: '그리운 사람의 편지가 왔어요 💌',
           files: [file],
         });
       }
@@ -733,7 +732,7 @@ const ChatInterface = memo(function ChatInterface() {
 
       {/* 캡처용 숨겨진 영역 - 스타일별 조건부 렌더링 */}
       <div className="absolute left-[-9999px] top-0">
-        <div ref={captureRef} className="w-[420px]" style={{
+        <div ref={captureRef} className="w-[600px]" style={{
           background: captureStyle === 'letter'
             ? '#faf3e8'
             : 'linear-gradient(180deg, #0a0e27, #1a0a2e, #0d1117)',
