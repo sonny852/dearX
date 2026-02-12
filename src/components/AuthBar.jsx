@@ -4,7 +4,7 @@ import { useApp } from '../context/AppContext';
 import { auth } from '../lib/supabase';
 
 const AuthBar = memo(function AuthBar() {
-  const { authUser, authLoading, handleLogout, showChat, showPersonForm, showForm, setShowMyPage, t } = useApp();
+  const { authUser, authLoading, handleLogout, showChat, showPersonForm, showForm, showMyPage, setShowMyPage, t } = useApp();
   const [hideByScroll, setHideByScroll] = useState(false);
 
   // 페이지 하단(푸터) 근처에서 숨기기
@@ -36,7 +36,7 @@ const AuthBar = memo(function AuthBar() {
   }, [showLoginModal]);
 
   // 채팅 화면, 인물 수정 화면, 폼 화면, 또는 푸터 근처에서는 AuthBar 숨김
-  if (showChat || showPersonForm || showForm || hideByScroll) return null;
+  if (showChat || showPersonForm || showForm || showMyPage || hideByScroll) return null;
 
   // 로딩 중에는 아무것도 표시하지 않음 (깜빡임 방지)
   if (authLoading) return null;
