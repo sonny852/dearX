@@ -228,20 +228,20 @@ const ChatInterface = memo(function ChatInterface() {
   return (
     <div ref={containerRef} className="fixed top-0 left-0 right-0 bg-dark z-[100] flex flex-col" style={{ height: '100%', willChange: 'transform, height' }}>
       {/* Header */}
-      <div className="p-4 border-b border-coral/20 bg-gradient-to-b from-dark/95 to-dark/80">
+      <div className="px-3 py-2 border-b border-coral/20 bg-gradient-to-b from-dark/95 to-dark/80">
         <div className="max-w-[900px] mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {/* 홈 버튼 - 비로그인 사용자만 */}
             {!authUser && (
               <button
                 onClick={handleGoHome}
-                className="w-10 h-10 rounded-full bg-coral/10 border border-coral/30 flex items-center justify-center text-coral hover:bg-coral/20 transition-colors"
+                className="w-8 h-8 rounded-full bg-coral/10 border border-coral/30 flex items-center justify-center text-coral hover:bg-coral/20 transition-colors"
               >
-                <Home size={18} />
+                <Home size={16} />
               </button>
             )}
             <div
-              className="w-10 h-10 rounded-full border-2 border-coral/30 flex-shrink-0"
+              className="w-9 h-9 rounded-full border-2 border-coral/30 flex-shrink-0"
               style={{
                 background: (activePerson.currentPhoto || activePerson.photo)
                   ? `url(${activePerson.currentPhoto || activePerson.photo}) center/cover`
@@ -249,10 +249,10 @@ const ChatInterface = memo(function ChatInterface() {
               }}
             />
             <div className="min-w-0">
-              <h2 className="m-0 text-base font-display font-bold text-coral truncate">
+              <h2 className="m-0 text-sm font-display font-bold text-coral truncate">
                 {activePerson.name}
               </h2>
-              <p className="m-0 text-xs text-cream/50">
+              <p className="m-0 text-[11px] text-cream/50">
                 {activePerson.targetAge}{t.ageUnit} · {activePerson.timeDirection === 'past' ? t.past : t.future}
               </p>
             </div>
@@ -279,7 +279,7 @@ const ChatInterface = memo(function ChatInterface() {
 
       {/* Messages */}
       <div
-        className="flex-1 overflow-y-auto p-4 flex flex-col"
+        className="flex-1 overflow-y-auto px-3 py-2 flex flex-col"
         style={{
           background: 'radial-gradient(circle at 20% 30%, rgba(255, 140, 105, 0.04) 0%, transparent 50%)',
         }}
@@ -382,7 +382,7 @@ const ChatInterface = memo(function ChatInterface() {
       </div>
 
       {/* Input / Selection Mode */}
-      <div className="p-3 border-t border-coral/20 bg-gradient-to-t from-dark/95 to-dark/80">
+      <div className="px-3 py-2 border-t border-coral/20 bg-gradient-to-t from-dark/95 to-dark/80">
         <div className="max-w-[900px] mx-auto">
           {/* 캡처 선택 모드 액션 바 */}
           {captureSelectMode ? (
@@ -439,18 +439,18 @@ const ChatInterface = memo(function ChatInterface() {
               )}
               {/* Free message counter for non-premium users */}
               {!authUser?.isPremium && remainingFreeMessages > 0 && (
-                <div className="text-center mb-3">
-                  <span className="text-cream/50 text-xs">
+                <div className="text-center mb-1.5">
+                  <span className="text-cream/50 text-[10px]">
                     {(t.freeMessagesRemaining || '무료 대화 {{count}}회 남음').replace('{{count}}', remainingFreeMessages)}
                   </span>
                 </div>
               )}
-              <div className="flex gap-3 items-center">
+              <div className="flex gap-2 items-center">
             {/* + 버튼 (카카오톡 스타일) */}
             <div className="relative">
               <button
                 onClick={(e) => { e.stopPropagation(); setShowPlusMenu(!showPlusMenu); }}
-                className={`w-12 h-12 rounded-full border flex items-center justify-center transition-all ${
+                className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${
                   showPlusMenu
                     ? 'bg-coral/30 border-coral text-coral rotate-45'
                     : 'bg-dark-card border-coral/30 text-coral/70 hover:border-coral/50 hover:text-coral'
@@ -512,12 +512,12 @@ const ChatInterface = memo(function ChatInterface() {
               onKeyPress={(e) => e.key === 'Enter' && handleSendWithImage()}
               onFocus={() => setShowPlusMenu(false)}
               placeholder={t.sendMessage}
-              className="flex-1 min-w-0 px-4 py-3 text-sm bg-dark-card border border-coral/30 rounded-full text-cream outline-none focus:border-coral/60 transition-colors"
+              className="flex-1 min-w-0 px-3 py-2.5 text-sm bg-dark-card border border-coral/30 rounded-full text-cream outline-none focus:border-coral/60 transition-colors"
             />
             <button
               onClick={handleSendWithImage}
               disabled={!input.trim() && !attachedImage}
-              className={`p-4 w-12 h-12 rounded-full border-none flex items-center justify-center transition-all ${
+              className={`p-3 w-10 h-10 rounded-full border-none flex items-center justify-center transition-all ${
                 input.trim() || attachedImage
                   ? 'bg-gradient-to-br from-coral to-coral-dark cursor-pointer shadow-lg shadow-coral/40'
                   : 'bg-coral/20 cursor-not-allowed'
