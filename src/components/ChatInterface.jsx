@@ -214,6 +214,7 @@ const ChatInterface = memo(function ChatInterface() {
 
       if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({
+          title: '그리운 사람의 편지가 왔어요 💌',
           files: [file],
         });
       }
