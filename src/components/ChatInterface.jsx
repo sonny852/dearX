@@ -678,8 +678,7 @@ const ChatInterface = memo(function ChatInterface() {
                     </div>
                   </td>
                   <td style={{ verticalAlign: 'middle' }}>
-                    <span style={{ fontFamily: 'Georgia, serif', fontSize: '14px', color: '#4a3728', fontWeight: 'bold', display: 'block', lineHeight: 1.4 }}>그리움을 만나다</span>
-                    <span style={{ fontSize: '11px', color: '#8a7560', display: 'block', lineHeight: 1.4 }}>DearX</span>
+                    <span style={{ fontFamily: 'Georgia, serif', fontSize: '14px', color: '#4a3728', fontWeight: 'bold', lineHeight: 1.4 }}>그리움을 만나다, DearX</span>
                   </td>
                 </tr></tbody></table>
                 <div style={{ background: 'white', padding: '4px', borderRadius: '4px', border: '1px solid #d4a574' }}>
@@ -790,8 +789,7 @@ const ChatInterface = memo(function ChatInterface() {
                     <img src="/favicon.png" alt="DearX" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
                   </td>
                   <td style={{ verticalAlign: 'middle' }}>
-                    <span style={{ fontSize: '14px', color: '#ffc17a', fontWeight: 'bold', display: 'block', lineHeight: 1.4 }}>그리움을 만나다</span>
-                    <span style={{ fontSize: '11px', color: '#a78bba', display: 'block', lineHeight: 1.4 }}>DearX</span>
+                    <span style={{ fontSize: '14px', color: '#ffc17a', fontWeight: 'bold', lineHeight: 1.4 }}>그리움을 만나다, DearX</span>
                   </td>
                 </tr></tbody></table>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -858,8 +856,7 @@ const ChatInterface = memo(function ChatInterface() {
                     <img src="/favicon.png" alt="DearX" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
                   </td>
                   <td style={{ verticalAlign: 'middle' }}>
-                    <span className="text-coral font-display font-bold text-lg leading-tight block">그리움을 만나다</span>
-                    <span className="text-cream/60 text-sm leading-tight block">DearX</span>
+                    <span className="text-coral font-display font-bold text-lg leading-tight">그리움을 만나다, DearX</span>
                   </td>
                 </tr></tbody></table>
                 <div className="bg-white p-1.5 rounded-xl shadow-lg">
