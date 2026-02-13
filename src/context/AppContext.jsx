@@ -844,6 +844,7 @@ export function AppProvider({ children }) {
       pendingAuthUser,
       messageCount,
       showPaymentPopup,
+      paymentReason,
       showLoginRequired,
       showMyPage,
       t,

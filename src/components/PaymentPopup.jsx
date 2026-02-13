@@ -57,7 +57,7 @@ const PaymentPopup = memo(function PaymentPopup() {
         <div className="flex items-center justify-between p-6 border-b border-coral/20">
           <h2 className="text-xl font-display font-bold text-coral m-0">
             {paymentReason === 'addPerson'
-              ? (t.addPersonTitle || '소중한 사람을 더 만나보세요')
+              ? (t.addPersonPayTitle || '소중한 사람을 더 만나보세요')
               : (t.freeMessagesUsed || '오늘 무료 대화를 모두 사용했어요')}
           </h2>
           <button
@@ -74,12 +74,12 @@ const PaymentPopup = memo(function PaymentPopup() {
           <div className="text-center mb-6">
             <p className="text-cream/70 text-sm">
               {paymentReason === 'addPerson'
-                ? (t.addPersonInfo || '무료 플랜은 1명까지 대화할 수 있어요')
+                ? (t.addPersonPayInfo || '무료 플랜은 1명까지 대화할 수 있어요')
                 : (t.freeMessagesInfo || `하루 ${FREE_MESSAGE_LIMIT}회 무료 대화를 모두 사용하셨습니다.`)}
             </p>
             <p className="text-cream/50 text-xs mt-2">
               {paymentReason === 'addPerson'
-                ? (t.addPersonSub || '프리미엄에서 여러 사람과 대화할 수 있어요')
+                ? (t.addPersonPaySub || '프리미엄에서 여러 사람과 대화할 수 있어요')
                 : (t.continueWithPremium || '프리미엄으로 계속 대화하세요')}
             </p>
           </div>
